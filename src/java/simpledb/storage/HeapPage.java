@@ -38,7 +38,7 @@ public class HeapPage implements Page {
      * database table, which can be determined via {@link Catalog#getTupleDesc}.
      * The number of 8-bit header words is equal to:
      * <p>
-     *      ceiling(no. tuple slots / 8)
+     *      ceiling (no. tuple slots / 8)
      * <p>
      * @see Database#getCatalog
      * @see Catalog#getTupleDesc
@@ -64,28 +64,32 @@ public class HeapPage implements Page {
             e.printStackTrace();
         }
         dis.close();
-
         setBeforeImage();
     }
 
     /** Retrieve the number of tuples on this page.
         @return the number of tuples on this page
     */
-    private int getNumTuples() {        
-        // some code goes here
-        return 0;
-
+    private int getNumTuples() {
+        // Update -> 2023-9-20
+        // 在BufferPool中定义了Page的默认大小 : `private static final int DEFAULT_PAGE_SIZE = 4096;`
+        // PS : 这个4096代表的是字节数，而一个字节数包含了8个比特，所以总共的比特数就是 : 4096 * 8
+        // 另外,我们还需要知道每一个tuple的大小，在实现tupleDesc类的时候我们计算过
+        // PS : 因为计算的依然是字节数， 所以还需要乘 8， 另外还需要一个比特来表示这个tuple是否有效
+        // 所以总共需要 tuple_size * 8 + 1 个字节
+        return (int) Math.floor((1.0 * BufferPool.getPageSize() * 8) / (td.getSize() * 8 + 1));
     }
 
     /**
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
-    private int getHeaderSize() {        
-        
-        // some code goes here
-        return 0;
-                 
+    private int getHeaderSize() {
+        // Update -> 2023-9-20
+        // 每一个tuple都占了一个比特 所以总共占的比特数为 tuple_num
+        // 八个比特为一个字节，所以字节数为 tuple_num / 8
+        // 但小数出现的话要向上取整，所以也可以写成 : `Math.ceil(getNumTuples() / 8.0);`
+        return (getNumTuples() - 1) / 8 + 1;
     }
     
     /** Return a view of this page before it was modified
@@ -117,8 +121,7 @@ public class HeapPage implements Page {
      * @return the PageId associated with this page.
      */
     public HeapPageId getId() {
-    // some code goes here
-    throw new UnsupportedOperationException("implement this");
+        return pid;
     }
 
     /**
@@ -287,16 +290,21 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        // some code goes here
-        return 0;
+        // 这里可以预处理，但是还不了解插入时的变化，所以先遍历寻找;
+        int num = 0;
+        for(int i = 0 ; i < numSlots ; i++) {
+            if(! isSlotUsed(i))
+                num ++;
+        }
+        return num;
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        // some code goes here
-        return false;
+        int pos = i / 8; int step = i % 8;
+        return ((header[pos] >> step) & 1) == 1;
     }
 
     /**
@@ -307,13 +315,22 @@ public class HeapPage implements Page {
         // not necessary for lab1
     }
 
+    public ArrayList<Tuple> getTupleList() {
+        int len = numSlots - getNumEmptySlots();
+        ArrayList<Tuple> list = new ArrayList<>(len);
+        for(int i = 0 ; i < tuples.length ; i ++) {
+            if(isSlotUsed(i))
+                list.add(tuples[i]);
+        }
+        return list;
+    }
+
     /**
      * @return an iterator over all tuples on this page (calling remove on this iterator throws an UnsupportedOperationException)
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        // some code goes here
-        return null;
+        return getTupleList().iterator();
     }
 
 }

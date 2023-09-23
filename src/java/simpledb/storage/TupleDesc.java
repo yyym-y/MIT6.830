@@ -42,6 +42,10 @@ public class TupleDesc implements Serializable {
                 return true;
             return td.fieldName.equals(this.fieldName);
         }
+
+        public int hashcode() {
+            return this.fieldName.hashCode() + fieldType.hashCode();
+        }
     }
 
     /**
@@ -50,8 +54,7 @@ public class TupleDesc implements Serializable {
      *        that are included in this TupleDesc
      * */
     public Iterator<TDItem> iterator() {
-        // some code goes here
-        return null;
+        return list.iterator();
     }
 
     private static final long serialVersionUID = 1L;
@@ -71,6 +74,8 @@ public class TupleDesc implements Serializable {
     private ArrayList<TDItem> list = new ArrayList<>();
     private HashMap<String, Integer> map = new HashMap<>();
 
+    private int code = 0;
+
     public ArrayList<TDItem> getList() {
         return list;
     }
@@ -85,8 +90,10 @@ public class TupleDesc implements Serializable {
 
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
         for(int temp = 0 ; temp < typeAr.length ; temp++) {
-            list.add(new TDItem(typeAr[temp], fieldAr[temp]));
+            TDItem td = new TDItem(typeAr[temp], fieldAr[temp]);
+            list.add(td);
             map.put(fieldAr[temp], temp);
+            code += td.hashcode();
         }
     }
 
@@ -223,9 +230,7 @@ public class TupleDesc implements Serializable {
     }
 
     public int hashCode() {
-        // If you want to use TupleDesc as keys for HashMap, implement this so
-        // that equal objects have equals hashCode() results
-        throw new UnsupportedOperationException("unimplemented");
+        return code;
     }
 
     /**

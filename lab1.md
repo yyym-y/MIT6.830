@@ -402,7 +402,7 @@ using `Database.getBufferPool()`).
 
 * src/java/simpledb/common/Catalog.java
 
-*** 
+***
 
 At this point, your code should pass the unit tests in CatalogTest.
 
@@ -542,7 +542,7 @@ disk.
 
 * src/java/simpledb/storage/HeapFile.java
 
-*** 
+***
 
 To read a page from disk, you will first need to calculate the correct offset in the file. Hint: you will need random
 access to the file in order to read and write pages at arbitrary offsets. You should not call BufferPool methods when

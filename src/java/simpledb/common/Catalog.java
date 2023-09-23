@@ -23,12 +23,28 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    private class TableItem {
+        private DbFile dbFile;
+        private String name;
+        private String pkeyField;
+
+        public TableItem(DbFile dbFile, String name, String pkeyField) {
+            this.dbFile = dbFile; this.name = name; this.pkeyField = pkeyField;
+        }
+    }
+
+    private ArrayList<TableItem> tables;
+    private ArrayList<Integer> tableIds;
+    private HashMap<String, Integer> nameMap =  new HashMap<>();
+    private HashMap<Integer, Integer> idMap = new HashMap<>();
+
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        this.tables = new ArrayList<>();
+        this.tableIds = new ArrayList<>();
     }
 
     /**
@@ -41,7 +57,11 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        TableItem table = new TableItem(file, name, pkeyField);
+        this.tables.add(table);
+        nameMap.put(name, this.tables.size() - 1);
+        idMap.put(file.getId(), this.tables.size() - 1);
+        tableIds.add(file.getId());
     }
 
     public void addTable(DbFile file, String name) {
@@ -64,8 +84,10 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        Integer pos = nameMap.get(name);
+        if(pos == null)
+            throw new NoSuchElementException();
+        return tables.get(pos).dbFile.getId();
     }
 
     /**
@@ -75,8 +97,10 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        Integer pos = idMap.get(tableid);
+        if(pos == null)
+            throw new NoSuchElementException();
+        return tables.get(pos).dbFile.getTupleDesc();
     }
 
     /**
@@ -86,28 +110,36 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        Integer pos = idMap.get(tableid);
+        if(pos == null)
+            throw new NoSuchElementException();
+        return tables.get(pos).dbFile;
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        Integer pos = idMap.get(tableid);
+        if(pos == null)
+            throw new NoSuchElementException();
+        return tables.get(pos).pkeyField;
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return tableIds.iterator();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        Integer pos = idMap.get(id);
+        if(pos == null)
+            throw new NoSuchElementException();
+        return tables.get(pos).name;
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        this.tableIds.clear();
+        this.tables.clear();
+        this.idMap.clear();
+        this.nameMap.clear();
     }
     
     /**
