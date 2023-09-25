@@ -48,7 +48,9 @@ public class TupleDesc implements Serializable {
         }
         // 快速获得TDitem的哈希值
         public int hashcode() {
-            return this.fieldName.hashCode() + fieldType.hashCode();
+            if(fieldName != null)
+                return this.fieldName.hashCode() + fieldType.hashCode();
+            return fieldType.hashCode();
         }
     }
 

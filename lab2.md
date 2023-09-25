@@ -126,28 +126,25 @@ from iterator classes, and in its place put `implements OpIterator`.
 
 ### 2.1. Filter and Join
 
-Recall that SimpleDB OpIterator classes implement the operations of the relational algebra. You will now implement two
-operators that will enable you to perform queries that are slightly more interesting than a table scan.
+Recall that SimpleDB OpIterator classes implement the operations of the relational algebra. You will now implement two operators that will enable you to perform queries that are slightly more interesting than a table scan.
 
 * *Filter*: This operator only returns tuples that satisfy a `Predicate` that is specified as part of its constructor.
   Hence, it filters out any tuples that do not match the predicate.
 
-* *Join*: This operator joins tuples from its two children according to a `JoinPredicate` that is passed in as part of
-  its constructor. We only require a simple nested loops join, but you may explore more interesting join
-  implementations. Describe your implementation in your lab writeup.
+* *Join*: This operator joins tuples from its two children according to a `JoinPredicate` that is passed in as part of its constructor. We only require a simple nested loops join, but you may explore more interesting join implementations. Describe your implementation in your lab writeup.
 
 **Exercise 1.**
 
 Implement the skeleton methods in:
 
-***  
+***
 
 * src/java/simpledb/execution/Predicate.java
 * src/java/simpledb/execution/JoinPredicate.java
 * src/java/simpledb/execution/Filter.java
 * src/java/simpledb/execution/Join.java
 
-***  
+***
 
 At this point, your code should pass the unit tests in PredicateTest, JoinPredicateTest, FilterTest, and JoinTest.
 Furthermore, you should be able to pass the system tests FilterTest and JoinTest.
@@ -174,13 +171,13 @@ do not need to worry about the situation where the number of groups exceeds avai
 
 Implement the skeleton methods in:
 
-***  
+***
 
 * src/java/simpledb/execution/IntegerAggregator.java
 * src/java/simpledb/execution/StringAggregator.java
 * src/java/simpledb/execution/Aggregate.java
 
-***  
+***
 
 At this point, your code should pass the unit tests IntegerAggregatorTest, StringAggregatorTest, and AggregateTest.
 Furthermore, you should be able to pass the AggregateTest system test.
@@ -203,7 +200,7 @@ the physical file on disk. You will need to ensure that the RecordID in the tupl
 
 Implement the remaining skeleton methods in:
 
-***  
+***
 
 * src/java/simpledb/storage/HeapPage.java
 * src/java/simpledb/storage/HeapFile.java<br>
@@ -225,12 +222,12 @@ implementation of transactions in the next lab will not work properly.
 
 Implement the following skeleton methods in <tt>src/simpledb/BufferPool.java</tt>:
 
-***  
+***
 
 * insertTuple()
 * deleteTuple()
 
-***  
+***
 
 
 These methods should call the appropriate methods in the HeapFile that belong to the table being modified (this extra
@@ -259,12 +256,12 @@ returning a single tuple with one integer field, containing the count.
 
 Implement the skeleton methods in:
 
-***  
+***
 
 * src/java/simpledb/execution/Insert.java
 * src/java/simpledb/execution/Delete.java
 
-***  
+***
 
 At this point, your code should pass the unit tests in InsertTest. We have not provided unit tests for `Delete`.
 Furthermore, you should be able to pass the InsertTest and DeleteTest system tests.
@@ -296,7 +293,7 @@ page it evicts.
 
 Fill in the `flushPage()` method and additional helper methods to implement page eviction in:
 
-***  
+***
 
 * src/java/simpledb/storage/BufferPool.java
 
