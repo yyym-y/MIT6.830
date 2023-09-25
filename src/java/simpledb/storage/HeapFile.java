@@ -77,7 +77,7 @@ public class HeapFile implements DbFile {
         if(pid.getPageNumber() > numPages()) {
             return null;
         }
-        try(BufferedInputStream bfInput = new BufferedInputStream(new FileInputStream(file))) {
+        try(RandomAccessFile file = new RandomAccessFile(this.file, "r")) {
 //            int each = BufferPool.getPageSize();
 //            int begin = each * pid.getPageNumber();
 //            byte[] info = new byte[each];
@@ -88,14 +88,12 @@ public class HeapFile implements DbFile {
 //            System.out.println(num);
 //            HeapPage heapPage = new HeapPage((HeapPageId) pid, info);
 //            return heapPage;
-            RandomAccessFile file = new RandomAccessFile(this.file, "r");
             long offset = getOffset(pid);
             byte[] data = new byte[BufferPool.getPageSize()];
             file.seek(offset);
             for (int i = 0, n = BufferPool.getPageSize(); i < n; ++i) {
                 data[i] = file.readByte();
             }
-            file.close();
             return new HeapPage((HeapPageId) pid, data);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -139,10 +137,6 @@ public class HeapFile implements DbFile {
 
 
     public DbFileIterator iterator(TransactionId tid) {
-        // 这里应该使用Buffer Pool， 但是不会实现，所以先遍历;
-        // 这里迭代器的原理不懂，以后了解迭代器之后再说
-        // Update -2023-9-23
-        // 实现了BufferPool 的 getPage()
         return new DbFileIterator() {
             private Iterator<Tuple> item = null;
             private int nowPageNum = 0; // 最后一个没有读的Page编号

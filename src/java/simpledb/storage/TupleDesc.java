@@ -13,42 +13,47 @@ public class TupleDesc implements Serializable {
     /**
      * A help class to facilitate organizing the information of each field
      * */
+    // 这个内部类用来表示TuplesDesc每一列的相关信息
     public static class TDItem implements Serializable {
 
+        // serialVersionUID用于序列化，可以不管
         private static final long serialVersionUID = 1L;
 
         /**
          * The type of the field
+         * 用来表示这一列所存放的数据类型，即存的是数字还是字符串
          * */
         public final Type fieldType;
         
         /**
          * The name of the field
+         * 这一列所表示的含义(即名字)
          * */
         public final String fieldName;
-
+        // 内部类构造函数
         public TDItem(Type t, String n) {
             this.fieldName = n;
             this.fieldType = t;
         }
-
+        // 重写toString方法，方便输出
         public String toString() {
             return fieldName + "(" + fieldType + ")";
         }
-
+        // 判断两个TDitem是否相等，方便后面判断两个TuplesDesc时候相等
         public boolean equals(TDItem td) {
             if(!(td.fieldType.equals(this.fieldType))) return false;
             if(td.fieldName == null && this.fieldName == null)
                 return true;
             return td.fieldName.equals(this.fieldName);
         }
-
+        // 快速获得TDitem的哈希值
         public int hashcode() {
             return this.fieldName.hashCode() + fieldType.hashCode();
         }
     }
 
     /**
+     * 返回一个TDitem的迭代器，以后会有用
      * @return
      *        An iterator which iterates over all the field TDItems
      *        that are included in this TupleDesc
@@ -70,22 +75,19 @@ public class TupleDesc implements Serializable {
      *            array specifying the names of the fields. Note that names may
      *            be null.
      */
-
+    // 用来存放 TDitem
     private ArrayList<TDItem> list = new ArrayList<>();
+    // 建立一个Hash映射表， 这样可以通过名字快速的找到这一列在数组中的索引
     private HashMap<String, Integer> map = new HashMap<>();
-
+    // 这个TuplesDesc 的哈希值
     private int code = 0;
-
+    // 通过这个函数快速获得这个表头的所有 TDitem信息
     public ArrayList<TDItem> getList() {
         return list;
     }
-
+    // 获得这张表的哈希映射表
     public HashMap<String, Integer> getMap() {
         return map;
-    }
-
-    public int getListSize() {
-        return list.size();
     }
 
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
@@ -110,14 +112,14 @@ public class TupleDesc implements Serializable {
             list.add(new TDItem(typeAr[temp], null));
         }
     }
-
+    // 返回这个表头一共有多少的TDitem
     /**
      * @return the number of fields in this TupleDesc
      */
     public int numFields() {
         return list.size();
     }
-
+    // 获取第 i 个 TDitem 的名字
     /**
      * Gets the (possibly null) field name of the ith field of this TupleDesc.
      * 
@@ -132,7 +134,7 @@ public class TupleDesc implements Serializable {
             throw new NoSuchElementException();
         return list.get(i).fieldName;
     }
-
+    // 获取第 i 个 TDitem 的类型
     /**
      * Gets the type of the ith field of this TupleDesc.
      * 
@@ -148,7 +150,7 @@ public class TupleDesc implements Serializable {
             throw new NoSuchElementException();
         return list.get(i).fieldType;
     }
-
+    // 获取这个名字对应的索引
     /**
      * Find the index of the field with a given name.
      * 
@@ -164,7 +166,8 @@ public class TupleDesc implements Serializable {
             throw new NoSuchElementException();
         return pos;
     }
-
+    // 获取这个Tuples所对应Tuple的字节大小
+    // 我们阅读Type的源码可以得到两种类型的字节大小，所以只需要遍历累加即可
     /**
      * @return The size (in bytes) of tuples corresponding to this TupleDesc.
      *         Note that tuples from a given TupleDesc are of a fixed size.
@@ -177,6 +180,7 @@ public class TupleDesc implements Serializable {
         return size;
     }
 
+    // 合并两个 TupleDesc 并返回合并后的 TupleDesc
     /**
      * Merge two TupleDescs into one, with td1.numFields + td2.numFields fields,
      * with the first td1.numFields coming from td1 and the remaining from td2.
@@ -188,18 +192,16 @@ public class TupleDesc implements Serializable {
      * @return the new TupleDesc
      */
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
-        Type[] newTypeList = new Type[td1.getListSize() + td2.getListSize()];
-        String[] newNameList = new String[td1.getListSize() + td2.getListSize()];
-        ArrayList<TDItem> list1 = td1.getList();
-        ArrayList<TDItem> list2 = td2.getList();
+        Type[] newTypeList = new Type[td1.numFields() + td2.numFields()];
+        String[] newNameList = new String[td1.numFields() + td2.numFields()];
         int pos = 0;
-        for(int i = 0 ; i < td1.getListSize() ; i++) {
-            newTypeList[pos] = list1.get(i).fieldType;
-            newNameList[pos++] = list1.get(i).fieldName;
+        for(int i = 0 ; i < td1.numFields() ; i++) {
+            newTypeList[pos] = td1.getFieldType(i);
+            newNameList[pos++] = td1.getFieldName(i);
         }
-        for(int i = 0 ; i < td2.getListSize() ; i++) {
-            newTypeList[pos] = list2.get(i).fieldType;
-            newNameList[pos++] = list2.get(i).fieldName;
+        for(int i = 0 ; i < td2.numFields() ; i++) {
+            newTypeList[pos] = td2.getFieldType(i);
+            newNameList[pos++] = td2.getFieldName(i);
         }
         return new TupleDesc(newTypeList, newNameList);
     }
@@ -214,21 +216,21 @@ public class TupleDesc implements Serializable {
      *            the Object to be compared for equality with this TupleDesc.
      * @return true if the object is equal to this TupleDesc.
      */
-
+    // 判断输入是否和本实例一样
     public boolean equals(Object o) {
-        if(! (o instanceof TupleDesc))
-            return false;
+        if(o == null) return false;
+        if(o.getClass() != getClass()) return false;
         TupleDesc give = (TupleDesc) o;
-        if(give.getListSize() != this.getListSize())
+        if(give.numFields() != this.numFields())
             return false;
         ArrayList<TDItem> list2 = give.getList();
-        for(int i = 0 ; i < list2.size() ; i++) {
+        for(int i = 0 ; i < numFields() ; i++) {
             if(! (list.get(i).equals(list2.get(i))))
                 return false;
         }
         return true;
     }
-
+    // 返回哈希值
     public int hashCode() {
         return code;
     }
@@ -241,7 +243,7 @@ public class TupleDesc implements Serializable {
      * @return String describing this descriptor.
      */
     public String toString() {
-        StringBuilder form = null;
+        StringBuilder form = new StringBuilder();
         for(int i = 0 ; i < list.size() ; i++) {
             form.append(",").append(list.get(i).toString());
         }

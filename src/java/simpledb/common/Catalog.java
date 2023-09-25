@@ -26,18 +26,23 @@ public class Catalog {
     private class TableItem {
         private DbFile dbFile;
         private String name;
+
+        // 这张表的主键
         private String pkeyField;
 
         public TableItem(DbFile dbFile, String name, String pkeyField) {
             this.dbFile = dbFile; this.name = name; this.pkeyField = pkeyField;
         }
     }
-
+    // 存储表信息
     private ArrayList<TableItem> tables;
+    // 存储对应下标表的 tableID
     private ArrayList<Integer> tableIds;
+    // 通过名字快速获取表的下标
     private HashMap<String, Integer> nameMap =  new HashMap<>();
-    private HashMap<Integer, Integer> idMap = new HashMap<>();
 
+    private HashMap<Integer, Integer> idMap = new HashMap<>();
+    // 通过 tableId 快速获取表的下标
     /**
      * Constructor.
      * Creates a new, empty catalog.
