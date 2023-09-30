@@ -75,6 +75,7 @@ public class AggregateTest extends SimpleDbTestBase {
             result.add(computeAggregate(e.getValue(), operation));
             results.add(result);
         }
+        System.out.println(results);
         return results;
     }
 

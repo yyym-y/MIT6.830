@@ -4,6 +4,7 @@ import simpledb.storage.Tuple;
 import simpledb.storage.TupleIterator;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * The common interface for any class that can compute an aggregate over a
@@ -84,5 +85,5 @@ public interface Aggregator extends Serializable {
      * @see TupleIterator for a possible helper
      */
     OpIterator iterator();
-    
+
 }
