@@ -252,8 +252,13 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        if(this.pid != t.getRecordId().getPageId())
+            throw new DbException("tuple is not on this page");
+        int i = t.getRecordId().getTupleNumber();
+        if(! isSlotUsed(i))
+            throw new DbException("tuple slot is already empty");
+        int num = i / 8; int pos = i % 8;
+        this.header[num] ^= (1L << pos);
     }
 
     /**
@@ -264,26 +269,39 @@ public class HeapPage implements Page {
      * @param t The tuple to add.
      */
     public void insertTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        if(getNumEmptySlots() == 0)
+            throw new DbException("the page is full (no empty slots)");
+        if(! this.td.equals(t.getTupleDesc()))
+            throw new DbException("tupledesc is mismatch");
+        for(int tem = 0 ; tem < numSlots ; tem++) {
+            if(! isSlotUsed(tem)) {
+                markSlotUsed(tem);
+                t.setRecordId(new RecordId(pid, tem));
+                tuples[tem] = t;
+                break;
+            }
+        }
     }
+
+
+    private TransactionId tid = null;
 
     /**
      * Marks this page as dirty/not dirty and record that transaction
      * that did the dirtying
      */
     public void markDirty(boolean dirty, TransactionId tid) {
-        // some code goes here
-	// not necessary for lab1
+        if(dirty)
+            this.tid = tid;
+        else
+            this.tid = null;
     }
 
     /**
      * Returns the tid of the transaction that last dirtied this page, or null if the page is not dirty
      */
     public TransactionId isDirty() {
-        // some code goes here
-	// Not necessary for lab1
-        return null;      
+        return tid;
     }
 
     /**
@@ -310,9 +328,8 @@ public class HeapPage implements Page {
     /**
      * Abstraction to fill or clear a slot on this page.
      */
-    private void markSlotUsed(int i, boolean value) {
-        // some code goes here
-        // not necessary for lab1
+    private void markSlotUsed(int i) {
+        this.header[i / 8] ^= (1L << (i % 8));
     }
 
     public ArrayList<Tuple> getTupleList() {

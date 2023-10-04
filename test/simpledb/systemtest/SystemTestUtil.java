@@ -122,9 +122,12 @@ public class SystemTestUtil {
                 Debug.log("\t" + Utility.listToString(t));
             }
         }
-
         iterator.open();
-        System.out.println(iterator.hasNext());
+        System.out.println(iterator.hasNext() + "--***///");
+        if (iterator.hasNext()) {
+            System.out.println(iterator.next());
+        }
+        iterator.rewind();
         while (iterator.hasNext()) {
             Tuple t = iterator.next();
             System.out.println(t);

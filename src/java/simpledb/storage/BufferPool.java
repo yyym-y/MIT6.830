@@ -10,6 +10,9 @@ import simpledb.transaction.TransactionId;
 import java.io.*;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,8 +37,12 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 
-    private int numPages;
+    private final int numPages;
+    private Get_pos getPos = new Get_pos();
+    private int numSpace = 0;
     private ConcurrentHashMap<PageId, Page> map = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<PageId, Integer> pid_pos = new ConcurrentHashMap<>();
+    private PageId[] slot = new PageId[DEFAULT_PAGES];
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -80,7 +87,24 @@ public class BufferPool {
         if(pg != null) return pg;
         DbFile db = Database.getCatalog().getDatabaseFile(pid.getTableId());
         pg = db.readPage(pid);
+        if(numSpace >= numPages){
+            try {
+                int num = getPos.getDel_pos();
+                flushPage(slot[num]);
+                numSpace--;
+                map.remove(slot[num]);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
         map.put(pid, pg);
+        numSpace ++;
+        try {
+            int num = getPos.getIns_pos();
+            slot[num] = pid;  pid_pos.put(pid, num);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return pg;
     }
 
@@ -127,6 +151,10 @@ public class BufferPool {
         // not necessary for lab1|lab2
     }
 
+    public void resetPage(Page p) {
+        map.put(p.getId(), p);
+    }
+
     /**
      * Add a tuple to the specified table on behalf of transaction tid.  Will
      * acquire a write lock on the page the tuple is added to and any other 
@@ -144,8 +172,13 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(tableId);
+        List<Page> pages = dbFile.insertTuple(tid, t);
+        for(Page pr : pages) {
+            resetPage(pr);
+            map.put(t.getRecordId().getPageId(), pr);
+            map.put(pr.getId(), pr);
+        }
     }
 
     /**
@@ -163,8 +196,12 @@ public class BufferPool {
      */
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+        List<Page> pages = dbFile.deleteTuple(tid, t);
+        for(Page pr : pages) {
+            pr.markDirty(true, tid);
+            resetPage(pr);
+        }
     }
 
     /**
@@ -187,8 +224,9 @@ public class BufferPool {
         are removed from the cache so they can be reused safely
     */
     public synchronized void discardPage(PageId pid) {
-        // some code goes here
-        // not necessary for lab1
+        int pos = pid_pos.get(pid);
+        map.remove(pid);
+        getPos.del_pos(pos);
     }
 
     /**
@@ -196,8 +234,9 @@ public class BufferPool {
      * @param pid an ID indicating the page to flush
      */
     private synchronized  void flushPage(PageId pid) throws IOException {
-        // some code goes here
-        // not necessary for lab1
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        dbFile.writePage(map.get(pid));
+        map.remove(pid);
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -214,6 +253,57 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+    }
+
+
+    public class Get_pos {
+
+        private byte[] ifDel = new byte[(int) Math.ceil(DEFAULT_PAGES / 8.0)];
+        private LinkedList<Integer> insert = new LinkedList<>();
+        private LinkedList<Integer> delete = new LinkedList<>();
+
+        public Get_pos() {
+            for(int i = 0 ; i < DEFAULT_PAGES ; i++) {
+                insert.add(i); setSlot(i, 1);
+            }
+        }
+        public void setSlot(int pos, int value) {
+            int num = pos / 8; pos %= 8;
+            if(value == 1)
+                ifDel[num] |= (1L << pos);
+            else
+                ifDel[num] ^= (ifDel[num] >> pos & 1 << pos);
+        }
+        public int getSlot(int pos) {
+            int num = pos / 8; pos %= 8;
+            return ifDel[num] >> pos & 1;
+        }
+        public int getIns_pos() throws Exception {
+            if(insert.isEmpty())
+                throw new Exception("no space to insert");
+            int num = insert.remove();
+            delete.add(num);
+            return num;
+        }
+
+        public int getDel_pos() throws Exception {
+            if(delete.isEmpty())
+                throw new Exception("nothing to del");
+            int num = delete.remove();
+            while (getSlot(num) == 0) {
+                if(delete.isEmpty())
+                    throw new Exception("nothing to del");
+                setSlot(num, 1);
+                num = delete.remove();
+            }
+            insert.add(num);
+            return num;
+        }
+
+        public void del_pos(int pos) {
+            setSlot(pos, 0);
+            insert.add(pos);
+        }
     }
 
 }

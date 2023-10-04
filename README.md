@@ -26,7 +26,7 @@ https://github.com/MIT-DB-Class/simple-db-hw-2022
 
 * lab 1  ： [MIT 6.830日寄-lab1 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/658169665)
 
-.....委婉待续
+.....未完待续
 
 
 
@@ -35,3 +35,4 @@ https://github.com/MIT-DB-Class/simple-db-hw-2022
 并不是持续的完成本项目，所以完成时间不代表持续时间
 
 * lab 1 : 2023 - 9 - 25 【包括整理完笔记】
+* lab 2 : 2023 - 10 - 3 【笔记待定】

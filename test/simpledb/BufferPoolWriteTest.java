@@ -78,7 +78,6 @@ public class BufferPoolWriteTest extends TestUtil.CreateHeapFile {
         	HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_ONLY);
         	assertEquals(504-i-1, p.getNumEmptySlots());
         }
-
         // the next 504 additions should live on a new page
         for (int i = 0; i < 504; ++i) {
         	Tuple t = Utility.getHeapTuple(i, 2);

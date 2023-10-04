@@ -44,7 +44,9 @@ public class TupleDesc implements Serializable {
             if(!(td.fieldType.equals(this.fieldType))) return false;
             if(td.fieldName == null && this.fieldName == null)
                 return true;
-            return td.fieldName.equals(this.fieldName);
+            if(td.fieldName != null)
+                return td.fieldName.equals(this.fieldName);
+            return false;
         }
         // 快速获得TDitem的哈希值
         public int hashcode() {

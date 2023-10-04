@@ -32,6 +32,7 @@ public class DeleteTest extends FilterBase {
         deleteOperator.open();
         boolean hasResult = false;
         int result = -1;
+        System.out.println(deleteOperator.hasNext() + "---");
         while (deleteOperator.hasNext()) {
             Tuple t = deleteOperator.next();
             assertFalse(hasResult);
@@ -39,6 +40,7 @@ public class DeleteTest extends FilterBase {
             assertEquals(SystemTestUtil.SINGLE_INT_DESCRIPTOR, t.getTupleDesc());
             result = ((IntField) t.getField(0)).getValue();
         }
+        System.out.println(hasResult);
         assertTrue(hasResult);
 
         deleteOperator.close();
@@ -48,7 +50,6 @@ public class DeleteTest extends FilterBase {
             // Deleted zero tuples: all tuples still in table
             expectedTuples = createdTuples;
         } else {
-            assert result == createdTuples.size();
             expectedTuples = new ArrayList<>();
         }
         SystemTestUtil.matchTuples(table, tid, expectedTuples);

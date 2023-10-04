@@ -55,7 +55,9 @@ public class SeqScan implements OpIterator {
                 types[i] = Type.INT_TYPE;
             else
                 types[i] = Type.STRING_TYPE;
-            names[i] = tableAlias + "." + tem.getFieldName(i);
+            if(tem.getFieldName(i) != null)
+                names[i] = tableAlias + "." + tem.getFieldName(i);
+            else names[i] = null;
         }
         td = new TupleDesc(types, names);
         it = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
@@ -98,7 +100,6 @@ public class SeqScan implements OpIterator {
     }
 
 
-    private boolean opened = false;
 
     public void open() throws DbException, TransactionAbortedException {
         it.open();
