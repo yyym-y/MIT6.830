@@ -101,7 +101,7 @@ public class HeapFile implements DbFile {
     }
 
      private long getOffset(PageId pid) {
-         return pid.getPageNumber() * BufferPool.getPageSize();
+         return (long) pid.getPageNumber() * BufferPool.getPageSize();
      }
 
 
