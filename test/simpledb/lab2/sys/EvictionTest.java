@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab2.sys;
 
 import static org.junit.Assert.*;
 
@@ -14,6 +14,8 @@ import simpledb.common.Utility;
 import simpledb.execution.Insert;
 import simpledb.execution.SeqScan;
 import simpledb.storage.*;
+import simpledb.systemtest.SimpleDbTestBase;
+import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;

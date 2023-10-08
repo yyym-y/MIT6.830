@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab2;
 
 import org.junit.Test;
 

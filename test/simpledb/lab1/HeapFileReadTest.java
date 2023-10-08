@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab1;
 
 import simpledb.common.Database;
 import simpledb.common.Utility;

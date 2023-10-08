@@ -1,5 +1,6 @@
-package simpledb;
+package simpledb.lab1;
 
+import simpledb.TestUtil;
 import simpledb.TestUtil.SkeletonFile;
 import simpledb.common.Database;
 import simpledb.common.Utility;

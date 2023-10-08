@@ -124,7 +124,7 @@ public class IntegerAggregator implements Aggregator {
                 if(item.hasNext()) {
                     return item.next();
                 }
-                else return null;
+                throw new NoSuchElementException();
             }
 
             @Override

@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab2;
 
 import static org.junit.Assert.assertEquals;
 
@@ -9,6 +9,7 @@ import junit.framework.JUnit4TestAdapter;
 import org.junit.Before;
 import org.junit.Test;
 
+import simpledb.TestUtil;
 import simpledb.common.Type;
 import simpledb.execution.Aggregator;
 import simpledb.execution.IntegerAggregator;
@@ -137,6 +138,7 @@ public class IntegerAggregatorTest extends SimpleDbTestBase {
     // first, populate the aggregator via sum over scan1
     scan1.open();
     IntegerAggregator agg = new IntegerAggregator(0, Type.INT_TYPE, 1, Aggregator.Op.SUM);
+
     try {
       while (true)
         agg.mergeTupleIntoGroup(scan1.next());
@@ -151,14 +153,15 @@ public class IntegerAggregatorTest extends SimpleDbTestBase {
     int count = 0;
     try {
       while (true) {
-        it.next();
+//        it.next();
+        System.out.println(it.next());
         count++;
       }
     } catch (NoSuchElementException e) {
       // explicitly ignored
     }
     assertEquals(3, count);
-
+    System.out.println("-------");
     // rewind and try again
     it.rewind();
     count = 0;

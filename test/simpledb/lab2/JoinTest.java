@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab2;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -8,6 +8,7 @@ import junit.framework.JUnit4TestAdapter;
 import org.junit.Before;
 import org.junit.Test;
 
+import simpledb.TestUtil;
 import simpledb.common.Utility;
 import simpledb.execution.Join;
 import simpledb.execution.JoinPredicate;
@@ -25,6 +26,8 @@ public class JoinTest extends SimpleDbTestBase {
   OpIterator scan2;
   OpIterator eqJoin;
   OpIterator gtJoin;
+  OpIterator myJoin;
+  OpIterator myJoin2;
 
   /**
    * Initialize each unit test
@@ -59,6 +62,27 @@ public class JoinTest extends SimpleDbTestBase {
                     7, 8, 4, 5, 6,
                     7, 8, 5, 6, 7
                     });
+    this.myJoin = TestUtil.createTupleList(width1 + width2,
+            new int[] {
+                    1, 2, 2, 3, 4,
+                    1, 2, 3, 4, 5,
+                    1, 2, 4, 5, 6,
+                    1, 2, 5, 6, 7,
+                    3, 4, 4, 5, 6,
+                    3, 4, 5, 6, 7,
+            });
+    this.myJoin2 = TestUtil.createTupleList(width1 + width2,
+            new int[] {
+                    1, 2, 1, 2, 3,
+                    1, 2, 2, 3, 4,
+                    1, 2, 3, 4, 5,
+                    1, 2, 4, 5, 6,
+                    1, 2, 5, 6, 7,
+                    3, 4, 3, 4, 5,
+                    3, 4, 4, 5, 6,
+                    3, 4, 5, 6, 7,
+                    5, 6, 5, 6, 7
+            });
   }
 
   /**
@@ -100,6 +124,19 @@ public class JoinTest extends SimpleDbTestBase {
     op.open();
     gtJoin.open();
     TestUtil.matchAllTuples(gtJoin, op);
+//    JoinPredicate pred2 = new JoinPredicate(0, Predicate.Op.LESS_THAN, 0);
+//    Join op2 = new Join(pred2, scan1, scan2);
+//    op2.open();
+//    myJoin.open();
+//    TestUtil.matchAllTuples(myJoin, op2);
+//    JoinPredicate pred3 = new JoinPredicate(0, Predicate.Op.GREATER_THAN, 0);
+//    Join op3 = new Join(pred3, scan1, scan2);
+//    op3.open();
+//    while (op3.hasNext())
+//      System.out.println(op3.next());
+//    op3.rewind();
+//    myJoin2.open();
+//    TestUtil.matchAllTuples(myJoin2, op3);
   }
 
   /**

@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab1;
 
 import static org.junit.Assert.assertEquals;
 

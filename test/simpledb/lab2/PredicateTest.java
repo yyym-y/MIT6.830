@@ -1,7 +1,8 @@
-package simpledb;
+package simpledb.lab2;
 
 import org.junit.Test;
 
+import simpledb.TestUtil;
 import simpledb.common.Utility;
 import simpledb.execution.Predicate;
 import simpledb.systemtest.SimpleDbTestBase;

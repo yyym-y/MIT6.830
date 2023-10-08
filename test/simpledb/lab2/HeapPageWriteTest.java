@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab2;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -8,10 +8,12 @@ import junit.framework.JUnit4TestAdapter;
 import org.junit.Before;
 import org.junit.Test;
 
+import simpledb.TestUtil;
 import simpledb.TestUtil.SkeletonFile;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Utility;
+import simpledb.lab1.HeapPageReadTest;
 import simpledb.storage.HeapPage;
 import simpledb.storage.HeapPageId;
 import simpledb.storage.Tuple;

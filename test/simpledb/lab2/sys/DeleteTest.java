@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab2.sys;
 
 import static org.junit.Assert.*;
 
@@ -14,6 +14,8 @@ import simpledb.execution.SeqScan;
 import simpledb.storage.HeapFile;
 import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
+import simpledb.systemtest.FilterBase;
+import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
@@ -32,7 +34,6 @@ public class DeleteTest extends FilterBase {
         deleteOperator.open();
         boolean hasResult = false;
         int result = -1;
-        System.out.println(deleteOperator.hasNext() + "---");
         while (deleteOperator.hasNext()) {
             Tuple t = deleteOperator.next();
             assertFalse(hasResult);

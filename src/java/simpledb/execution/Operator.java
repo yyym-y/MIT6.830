@@ -19,7 +19,6 @@ public abstract class Operator implements OpIterator {
     public boolean hasNext() throws DbException, TransactionAbortedException {
         if (!this.open)
             throw new IllegalStateException("Operator not yet open");
-        
         if (next == null)
             next = fetchNext();
         return next != null;

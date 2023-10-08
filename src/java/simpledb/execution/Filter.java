@@ -38,8 +38,6 @@ public class Filter extends Operator {
         return child.getTupleDesc();
     }
 
-    public boolean opened = false;
-
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         super.open();

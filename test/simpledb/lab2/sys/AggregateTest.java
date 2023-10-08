@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab2.sys;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +14,8 @@ import simpledb.execution.Aggregator;
 import simpledb.execution.SeqScan;
 import simpledb.storage.DbFile;
 import simpledb.storage.HeapFile;
+import simpledb.systemtest.SimpleDbTestBase;
+import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

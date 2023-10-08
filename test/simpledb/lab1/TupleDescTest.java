@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab1;
 
 import java.util.NoSuchElementException;
 

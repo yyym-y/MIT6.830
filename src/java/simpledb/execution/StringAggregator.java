@@ -96,7 +96,7 @@ public class StringAggregator implements Aggregator {
                 if(item.hasNext()) {
                     return item.next();
                 }
-                else return null;
+                throw new NoSuchElementException();
             }
 
             private void getIter() {

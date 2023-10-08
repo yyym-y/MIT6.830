@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab2;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -11,6 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import simpledb.TestUtil;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Permissions;

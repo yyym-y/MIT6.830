@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab1;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
@@ -17,6 +17,8 @@ import java.util.Random;
 
 import org.junit.Test;
 
+import simpledb.systemtest.SimpleDbTestBase;
+import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

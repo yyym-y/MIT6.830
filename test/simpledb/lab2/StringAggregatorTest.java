@@ -1,10 +1,11 @@
-package simpledb;
+package simpledb.lab2;
 
 import java.util.*;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import simpledb.TestUtil;
 import simpledb.common.Type;
 import simpledb.execution.Aggregator;
 import simpledb.execution.OpIterator;

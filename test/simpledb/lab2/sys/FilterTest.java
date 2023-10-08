@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab2.sys;
 
 import static org.junit.Assert.*;
 
@@ -7,6 +7,7 @@ import simpledb.execution.Filter;
 import simpledb.execution.Predicate;
 import simpledb.execution.SeqScan;
 import simpledb.storage.HeapFile;
+import simpledb.systemtest.FilterBase;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
