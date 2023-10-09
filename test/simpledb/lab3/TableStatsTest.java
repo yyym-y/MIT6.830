@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab3;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab3;
 
 import org.junit.Test;
 import org.junit.Assert;

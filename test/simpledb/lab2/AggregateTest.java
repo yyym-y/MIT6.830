@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab2;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -8,6 +8,7 @@ import junit.framework.JUnit4TestAdapter;
 import org.junit.Before;
 import org.junit.Test;
 
+import simpledb.TestUtil;
 import simpledb.common.Type;
 import simpledb.common.Utility;
 import simpledb.execution.Aggregate;

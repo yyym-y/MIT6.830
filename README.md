@@ -25,6 +25,7 @@ https://github.com/MIT-DB-Class/simple-db-hw-2022
 同时笔记也会发布到知乎上
 
 * lab 1  ： [MIT 6.830日寄-lab1 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/658169665)
+* lab 2  ： [MIT 6.830日寄-lab2 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/660173608)
 
 .....未完待续
 
