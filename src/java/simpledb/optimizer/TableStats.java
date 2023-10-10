@@ -1,13 +1,14 @@
 package simpledb.optimizer;
 
 import simpledb.common.Database;
+import simpledb.common.DbException;
 import simpledb.common.Type;
 import simpledb.execution.Predicate;
-import simpledb.execution.SeqScan;
 import simpledb.storage.*;
-import simpledb.transaction.Transaction;
+import simpledb.transaction.TransactionAbortedException;
+import simpledb.transaction.TransactionId;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +43,6 @@ public class TableStats {
         } catch (NoSuchFieldException | IllegalAccessException | IllegalArgumentException | SecurityException e) {
             e.printStackTrace();
         }
-
     }
 
     public static Map<String, TableStats> getStatsMap() {
@@ -67,6 +67,32 @@ public class TableStats {
      * histograms.
      */
     static final int NUM_HIST_BINS = 100;
+    public class Histogram {
+        private Object obj;
+        public Histogram(int buckets, int min, int max) {
+            obj = new IntHistogram(buckets, min, max);
+        }
+        public Histogram(int buckets) {
+            obj = new StringHistogram(buckets);
+        }
+        public void addValues(int v) {
+            ((IntHistogram) obj).addValue(v);
+        }
+        public void addValues(String v) {
+            ((StringHistogram) obj).addValue(v);
+        }
+        public double estimateSelectivity(Predicate.Op op, int v) {
+            return ((IntHistogram) obj).estimateSelectivity(op, v);
+        }
+        public double estimateSelectivity(Predicate.Op op, String v) {
+            return ((StringHistogram) obj).estimateSelectivity(op, v);
+        }
+    }
+    private ArrayList<Histogram> each;
+    private int[] Max;
+    private int[] Min;
+    private double scanCost;
+    private int numTuples = 0;
 
     /**
      * Create a new TableStats object, that keeps track of statistics on each
@@ -79,14 +105,46 @@ public class TableStats {
      *            sequential-scan IO and disk seeks.
      */
     public TableStats(int tableid, int ioCostPerPage) {
-        // For this function, you'll have to get the
-        // DbFile for the table in question,
-        // then scan through its tuples and calculate
-        // the values that you need.
-        // You should try to do this reasonably efficiently, but you don't
-        // necessarily have to (for example) do everything
-        // in a single scan of the table.
-        // some code goes here
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(tableid);
+        TupleDesc tupleDesc = dbFile.getTupleDesc();
+        each = new ArrayList<>(tupleDesc.numFields());
+        Max = new int[tupleDesc.numFields()]; Min = new int[tupleDesc.numFields()];
+        for(int i = 0 ; i < tupleDesc.numFields() ; i++) {
+            Max[i] = Integer.MIN_VALUE; Min[i] = Integer.MAX_VALUE;
+        }
+        DbFileIterator tuples = dbFile.iterator(new TransactionId());
+        try {
+            tuples.open();
+            while (tuples.hasNext()) {
+                Tuple next = tuples.next(); numTuples ++;
+                for(int i = 0 ; i < tupleDesc.numFields() ; i++) {
+                    if(tupleDesc.getFieldType(i).equals(Type.INT_TYPE)) {
+                        Max[i] = Math.max(Max[i], ((IntField) next.getField(i)).getValue());
+                        Min[i] = Math.min(Min[i], ((IntField) next.getField(i)).getValue());
+                    }
+                }
+            }
+            for(int i = 0 ; i < tupleDesc.numFields() ; i++) {
+                if(tupleDesc.getFieldType(i).equals(Type.INT_TYPE))
+                    each.add(new Histogram((Max[i] - Min[i]) / 10, Min[i], Max[i]));
+                else
+                    each.add(new Histogram(10));
+            }
+            tuples.rewind();
+            while (tuples.hasNext()) {
+                Tuple next = tuples.next();
+                for(int i = 0 ; i < tupleDesc.numFields() ; i++) {
+                    if(tupleDesc.getFieldType(i).equals(Type.INT_TYPE))
+                        each.get(i).addValues(((IntField) next.getField(i)).getValue());
+                    else
+                        each.get(i).addValues(((StringField) next.getField(i)).getValue());
+                }
+            }
+            this.scanCost = ((HeapFile) dbFile).numPages() * ioCostPerPage;
+        } catch (DbException | TransactionAbortedException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     /**
@@ -102,8 +160,7 @@ public class TableStats {
      * @return The estimated cost of scanning the table.
      */
     public double estimateScanCost() {
-        // some code goes here
-        return 0;
+        return scanCost;
     }
 
     /**
@@ -116,8 +173,7 @@ public class TableStats {
      *         selectivityFactor
      */
     public int estimateTableCardinality(double selectivityFactor) {
-        // some code goes here
-        return 0;
+        return (int) (selectivityFactor * totalTuples());
     }
 
     /**
@@ -131,7 +187,7 @@ public class TableStats {
      * expected selectivity. You may estimate this value from the histograms.
      * */
     public double avgSelectivity(int field, Predicate.Op op) {
-        // some code goes here
+        // skip 大家都不xie....
         return 1.0;
     }
 
@@ -149,16 +205,17 @@ public class TableStats {
      *         predicate
      */
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
-        // some code goes here
-        return 1.0;
+        if(constant.getType().equals(Type.INT_TYPE))
+            return each.get(field).estimateSelectivity(op, ((IntField) constant).getValue());
+        else
+            return each.get(field).estimateSelectivity(op, ((StringField) constant).getValue());
     }
 
     /**
      * return the total number of tuples in this table
      * */
     public int totalTuples() {
-        // some code goes here
-        return 0;
+        return numTuples;
     }
 
 }

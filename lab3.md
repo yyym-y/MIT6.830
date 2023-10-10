@@ -75,6 +75,7 @@ to review the <a href="https://github.com/MIT-DB-Class/simple-db-hw-2021/blob/ma
 before starting this lab.  Briefly, if you have a catalog file
 <tt>catalog.txt</tt> describing your tables, you can run the parser by
 typing:
+
 ```
 java -jar dist/simpledb.jar parser catalog.txt
 ```
@@ -109,6 +110,7 @@ the basic operation is as follows:
     <tt>LogicalPlan</tt> instance it has constructed.  The <tt>physicalPlan</tt> method returns a
     <tt>DBIterator</tt> object that can be used to actually run the query.
     
+
 In the exercises to come, you will implement the methods that help
 <tt>physicalPlan</tt> devise an optimal plan.
 
@@ -234,7 +236,6 @@ intent is that you calculate histograms using the bucket-based method described
 above, but you are free to use some other method so long as it provides
 reasonable selectivity estimates.
 
-
 We have provided a class <tt>StringHistogram</tt> that uses
 <tt>IntHistogram</tt> to compute selecitivites for String
 predicates.  You may modify <tt>StringHistogram</tt> if you want to
@@ -284,6 +285,7 @@ purposes of selectivity estimation.
 
 After completing these tasks you should be able to pass the unit tests
 in <tt>TableStatsTest</tt>.
+
 ***
 
 #### 2.2.4 Join Cardinality
@@ -302,7 +304,7 @@ While implementing your simple solution, you  should keep in mind the following:
 
 <!--  
   * <a name="change">The following three paragraphs are different in this version of the lab. </a> *
-  .-->
+    .-->
 *  For equality joins, when one of the attributes is a primary key, the number of tuples produced by the join cannot
    be larger than the cardinality of the non-primary key attribute.
 * For equality joins when there is no primary key, it's hard to say much about what the size of the output
