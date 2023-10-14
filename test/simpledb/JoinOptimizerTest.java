@@ -368,6 +368,8 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         // nodes,
         // you shouldn't end up with more than you started with
         Assert.assertEquals(result.size(), nodes.size());
+        System.out.println(result.size());
+        System.out.println(nodes.size());
 
         // There were a number of ways to do the query in this quiz, reasonably
         // well;
@@ -380,6 +382,10 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         // join by
         // "hobbies" only being at the two extremes, or "hobbies" being the
         // outermost table.
+        for(int i = 0 ; i < result.size() ; i++) {
+            System.out.print(result.get(i).t1Alias + " " + result.get(i).t2Alias);
+            System.out.println();
+        }
         Assert.assertFalse(result.get(2).t2Alias.equals("hobbies")
                 && (result.get(0).t1Alias.equals("hobbies") || result.get(0).t2Alias.equals("hobbies")));
     }
@@ -431,6 +437,8 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         HeapFile smallHeapFileN = createDuplicateHeapFile(smallHeapFileTuples,
                 2, "c");
 
+        System.out.println("-----");
+
         List<List<Integer>> bigHeapFileTuples = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
             bigHeapFileTuples.add(smallHeapFileTuples.get(i % 100));
@@ -438,6 +446,22 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         HeapFile bigHeapFile = createDuplicateHeapFile(bigHeapFileTuples, 2,
                 "c");
         Database.getCatalog().addTable(bigHeapFile, "bigTable");
+        double maxHeapSize = Runtime.getRuntime().maxMemory();
+        String sizeInReadableForm;
+
+        double kbSize = maxHeapSize / 1024;
+        double mbSize = kbSize / 1024;
+        double gbSize = mbSize / 1024;
+
+        if (gbSize > 0) {
+            sizeInReadableForm = gbSize + " GB";
+        } else if (mbSize > 0) {
+            sizeInReadableForm = mbSize + " MB";
+        } else {
+            sizeInReadableForm = kbSize + " KB";
+        }
+
+        System.out.println("Maximum Heap Size: " + sizeInReadableForm);
 
         // Add the tables to the database
         Database.getCatalog().addTable(bigHeapFile, "bigTable");
@@ -457,21 +481,25 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         Database.getCatalog().addTable(smallHeapFileN, "n");
 
         // Come up with join statistics for the tables
+        System.out.println("////----");
         stats.put("bigTable", new TableStats(bigHeapFile.getId(), IO_COST));
+        System.out.println("??????---???");
         stats.put("a", new TableStats(smallHeapFileA.getId(), IO_COST));
-        stats.put("b", new TableStats(smallHeapFileB.getId(), IO_COST));
+        System.out.println("1");
+        stats.put("b", new TableStats(smallHeapFileB.getId(), IO_COST));System.out.println("1");
         stats.put("c", new TableStats(smallHeapFileC.getId(), IO_COST));
         stats.put("d", new TableStats(smallHeapFileD.getId(), IO_COST));
-        stats.put("e", new TableStats(smallHeapFileE.getId(), IO_COST));
+        stats.put("e", new TableStats(smallHeapFileE.getId(), IO_COST));System.out.println("1");
         stats.put("f", new TableStats(smallHeapFileF.getId(), IO_COST));
         stats.put("g", new TableStats(smallHeapFileG.getId(), IO_COST));
+        System.out.println("1");
         stats.put("h", new TableStats(smallHeapFileG.getId(), IO_COST));
         stats.put("i", new TableStats(smallHeapFileG.getId(), IO_COST));
-        stats.put("j", new TableStats(smallHeapFileG.getId(), IO_COST));
+        stats.put("j", new TableStats(smallHeapFileG.getId(), IO_COST));System.out.println("1");
         stats.put("k", new TableStats(smallHeapFileG.getId(), IO_COST));
         stats.put("l", new TableStats(smallHeapFileG.getId(), IO_COST));
         stats.put("m", new TableStats(smallHeapFileG.getId(), IO_COST));
-        stats.put("n", new TableStats(smallHeapFileG.getId(), IO_COST));
+        stats.put("n", new TableStats(smallHeapFileG.getId(), IO_COST));System.out.println("1");
 
         // Put in some filter selectivities
         filterSelectivities.put("bigTable", 1.0);
@@ -490,6 +518,8 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         filterSelectivities.put("m", 1.0);
         filterSelectivities.put("n", 1.0);
 
+        System.out.println("???lll--");
+
         // Add the nodes to a collection for a query plan
         nodes.add(new LogicalJoinNode("a", "b", "c1", "c1", Predicate.Op.EQUALS));
         nodes.add(new LogicalJoinNode("b", "c", "c0", "c0", Predicate.Op.EQUALS));
@@ -507,6 +537,7 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         nodes.add(new LogicalJoinNode("n", "bigTable", "c0", "c0",
                 Predicate.Op.EQUALS));
 
+        System.out.println("------]]]");
         // Make sure we don't give the nodes to the optimizer in a nice order
         Collections.shuffle(nodes);
         Parser p = new Parser();

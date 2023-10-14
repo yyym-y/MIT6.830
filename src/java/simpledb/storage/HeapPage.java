@@ -25,6 +25,7 @@ public class HeapPage implements Page {
     final Tuple[] tuples;
     final int numSlots;
 
+    final ArrayList<Tuple> allTuples = new ArrayList<>();
     byte[] oldData;
     private final Byte oldDataLock= (byte) 0;
 

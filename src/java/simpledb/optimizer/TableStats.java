@@ -67,30 +67,9 @@ public class TableStats {
      * histograms.
      */
     static final int NUM_HIST_BINS = 100;
-    public class Histogram {
-        private Object obj;
-        public Histogram(int buckets, int min, int max) {
-            obj = new IntHistogram(buckets, min, max);
-        }
-        public Histogram(int buckets) {
-            obj = new StringHistogram(buckets);
-        }
-        public void addValues(int v) {
-            ((IntHistogram) obj).addValue(v);
-        }
-        public void addValues(String v) {
-            ((StringHistogram) obj).addValue(v);
-        }
-        public double estimateSelectivity(Predicate.Op op, int v) {
-            return ((IntHistogram) obj).estimateSelectivity(op, v);
-        }
-        public double estimateSelectivity(Predicate.Op op, String v) {
-            return ((StringHistogram) obj).estimateSelectivity(op, v);
-        }
-    }
-    private ArrayList<Histogram> each;
-    private int[] Max;
-    private int[] Min;
+    private ArrayList<? super Object> each;
+    private final int[] Max;
+    private final int[] Min;
     private double scanCost;
     private int numTuples = 0;
 
@@ -112,7 +91,9 @@ public class TableStats {
         for(int i = 0 ; i < tupleDesc.numFields() ; i++) {
             Max[i] = Integer.MIN_VALUE; Min[i] = Integer.MAX_VALUE;
         }
+        System.out.println(Database.getCatalog().getTableName(tableid) + " begin");
         DbFileIterator tuples = dbFile.iterator(new TransactionId());
+        System.out.println("end");
         try {
             tuples.open();
             while (tuples.hasNext()) {
@@ -124,20 +105,21 @@ public class TableStats {
                     }
                 }
             }
+            System.out.println(Database.getCatalog().getTableName(tableid) + " getMinAndMax");
             for(int i = 0 ; i < tupleDesc.numFields() ; i++) {
                 if(tupleDesc.getFieldType(i).equals(Type.INT_TYPE))
-                    each.add(new Histogram((Max[i] - Min[i]) / 10, Min[i], Max[i]));
+                    each.add(new IntHistogram(10, Min[i], Max[i]));
                 else
-                    each.add(new Histogram(10));
+                    each.add(new StringHistogram(10));
             }
             tuples.rewind();
             while (tuples.hasNext()) {
                 Tuple next = tuples.next();
                 for(int i = 0 ; i < tupleDesc.numFields() ; i++) {
                     if(tupleDesc.getFieldType(i).equals(Type.INT_TYPE))
-                        each.get(i).addValues(((IntField) next.getField(i)).getValue());
+                        ((IntHistogram) each.get(i)).addValue(((IntField) next.getField(i)).getValue());
                     else
-                        each.get(i).addValues(((StringField) next.getField(i)).getValue());
+                        ((StringHistogram)each.get(i)).addValue(((StringField) next.getField(i)).getValue());
                 }
             }
             this.scanCost = ((HeapFile) dbFile).numPages() * ioCostPerPage;
@@ -206,9 +188,9 @@ public class TableStats {
      */
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
         if(constant.getType().equals(Type.INT_TYPE))
-            return each.get(field).estimateSelectivity(op, ((IntField) constant).getValue());
+            return ((IntHistogram)each.get(field)).estimateSelectivity(op, ((IntField) constant).getValue());
         else
-            return each.get(field).estimateSelectivity(op, ((StringField) constant).getValue());
+            return ((StringHistogram)each.get(field)).estimateSelectivity(op, ((StringField) constant).getValue());
     }
 
     /**

@@ -1,11 +1,15 @@
 package simpledb.optimizer;
 
+import net.sf.antcontrib.design.Log;
 import simpledb.common.Database;
 import simpledb.ParsingException;
 import simpledb.execution.*;
 import simpledb.storage.TupleDesc;
 
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.*;
 import javax.swing.tree.*;
@@ -130,7 +134,7 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            return cost1 + card1 * cost2 + card1 * card2;
         }
     }
 
@@ -175,7 +179,17 @@ public class JoinOptimizer {
                                                    boolean t2pkey, Map<String, TableStats> stats,
                                                    Map<String, Integer> tableAliasToId) {
         int card = 1;
-        // some code goes here
+        if(joinOp.equals(Predicate.Op.EQUALS)) {
+            if(t1pkey && !t2pkey)
+                card = card2;
+            else if(! t1pkey && t2pkey)
+                card = card1;
+            else if(! t1pkey && ! t2pkey)
+                card = Math.max(card1, card2);
+            else if (t1pkey && t2pkey)
+                card = Math.min(card1, card2);
+        }else
+            card = (int)((card1 * card2) * 0.3);
         return card <= 0 ? 1 : card;
     }
 
@@ -211,6 +225,24 @@ public class JoinOptimizer {
 
     }
 
+    public HashMap<Integer, List<Set<LogicalJoinNode>>> getMap(List<LogicalJoinNode> join) {
+        int len = join.size();
+        HashMap<Integer, List<Set<LogicalJoinNode>>> map = new HashMap<>();
+        for(int i = 1 ; i < (1 << len) ; i++) {
+            Set<LogicalJoinNode> now = new HashSet<>();
+            int numEle = 0;
+            for(int j = 0 ; j < len ; j ++) {
+                int num = i >> j & 1;
+                if (num == 1) {
+                    numEle ++; now.add(join.get(j));
+                }
+            }
+            map.computeIfAbsent(numEle, k -> new ArrayList<>());
+            map.get(numEle).add(now);
+        }
+        return map;
+    }
+
     /**
      * Compute a logical, reasonably efficient join on the specified tables. See
      * PS4 for hints on how this should be implemented.
@@ -235,9 +267,30 @@ public class JoinOptimizer {
             Map<String, TableStats> stats,
             Map<String, Double> filterSelectivities, boolean explain)
             throws ParsingException {
-
-        // some code goes here
-        //Replace the following
+        HashMap<Integer, List<Set<LogicalJoinNode>>> map = getMap(this.joins);
+        PlanCache pc = new PlanCache();
+        CostCard costCard = null;
+        for(int i = 1 ; i <= joins.size() ; i++) {
+            List<Set<LogicalJoinNode>> subset = map.get(i);
+            for(Set<LogicalJoinNode> set : subset) {
+                double minCost = Double.MAX_VALUE;
+                for(LogicalJoinNode removeNode : set) {
+                    CostCard cc = computeCostAndCardOfSubplan(
+                            stats, filterSelectivities, removeNode, set,
+                            minCost, pc
+                    );
+                    if(cc != null) {
+                        minCost = cc.cost;
+                        costCard = cc;
+                    }
+                }
+                if(minCost != Double.MAX_VALUE) {
+                    pc.addPlan(set, minCost, costCard.card, costCard.plan);
+                }
+            }
+        }
+        if(costCard != null)
+            return costCard.plan;
         return joins;
     }
 

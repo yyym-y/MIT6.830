@@ -152,6 +152,7 @@ public class JoinTool {
                child2.getTupleDesc().getFieldType(p.getField2()) != Type.INT_TYPE)
                 return new LoopJoin(child1, child2, p);
             return new MergeSortJoin(child1, child2, p);
+//            return new LoopJoin(child1, child2, p);
         }
     }
 }

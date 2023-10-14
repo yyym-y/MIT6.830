@@ -70,9 +70,12 @@ public class HeapFile implements DbFile {
     public TupleDesc getTupleDesc() {
         return td;
     }
+    public static int IO = 0;
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
+        //System.out.println("IO num " + (++ HeapFile.IO));
+        ++ HeapFile.IO;
         // 这里应该先在缓冲池里面寻找， 但是代码没写好，所以先直接在磁盘文件里查找
         if(pid.getPageNumber() > numPages()) {
             return null;
@@ -190,39 +193,68 @@ public class HeapFile implements DbFile {
                     throw new RuntimeException(e);
                 }
             }
-
+            ArrayList<Iterator<Tuple>> items = null;
+            public void readAllTuples() {
+                items = new ArrayList<>();
+                for(int i = 0 ; i < numPages() ; i ++) {
+                    HeapPageId hpid = new HeapPageId(getId(), i);
+                    try {
+                        HeapPage hpg = (HeapPage) Database.getBufferPool().getPage(tid, hpid, Permissions.READ_ONLY);
+                        items.add(hpg.iterator());
+                    } catch (TransactionAbortedException | DbException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                System.out.println("read ALL Tuples");
+            }
+            int pos = 0;
             @Override
             public void open() throws DbException, TransactionAbortedException {
-                rewind();
+//                rewind();
+                readAllTuples(); pos = 0;
                 opened = true;
             }
 
             @Override
             public boolean hasNext() throws DbException, TransactionAbortedException {
-                if(item == null) return false;
-                if(! item.hasNext()) {
-                    readItem();
-                    return item != null && item.hasNext();
-                }
-                return true;
+//                if(item == null) return false;
+//                if(! item.hasNext()) {
+//                    readItem();
+//                    return item != null && item.hasNext();
+//                }
+//                return true;
+                if(! opened || pos >= items.size())
+                    return false;
+                if(items.get(pos).hasNext()) return true;
+                while ( pos < items.size() && ! items.get(pos).hasNext() )
+                    pos ++;
+                if(pos >= items.size())
+                    return false;
+                return items.get(pos).hasNext();
             }
 
             @Override
             public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
-                if(item == null || ! opened)
+//                if(item == null || ! opened)
+//                    throw new NoSuchElementException();
+//
+//                //System.out.println(item.hasNext());
+//                if(hasNext() && item.hasNext())
+//                    return item.next();
+//                throw new NoSuchElementException();
+                if(! opened)
                     throw new NoSuchElementException();
-
-                //System.out.println(item.hasNext());
-                if(hasNext() && item.hasNext())
-                    return item.next();
+                if(hasNext())
+                    return items.get(pos).next();
                 throw new NoSuchElementException();
             }
 
             @Override
             public void rewind() throws DbException, TransactionAbortedException {
-                nowPageNum = 0;
-                item = null;
-                readItem();
+//                nowPageNum = 0;
+//                item = null;
+//                readItem();
+                readAllTuples(); pos = 0;
             }
 
             @Override
