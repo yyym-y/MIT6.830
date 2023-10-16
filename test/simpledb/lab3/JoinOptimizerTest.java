@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab3;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +8,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import simpledb.Parser;
+import simpledb.ParsingException;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Utility;

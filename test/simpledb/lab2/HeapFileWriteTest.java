@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab2;
 
 import org.junit.After;
 import org.junit.Before;
@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 import junit.framework.JUnit4TestAdapter;
+import simpledb.TestUtil;
 import simpledb.common.Database;
 import simpledb.common.Utility;
 import simpledb.storage.*;
