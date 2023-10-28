@@ -41,8 +41,6 @@ public class Insert extends Operator {
             throws DbException {
         this.t = t; this.child = child; this.tableId = tableId;
         TupleDesc ttable = Database.getCatalog().getTupleDesc(tableId);
-        System.out.println(ttable);
-        System.out.println(child.getTupleDesc());
         if(! ttable.equals(child.getTupleDesc()))
             throw new DbException("TupleDesc no same");
     }
@@ -68,7 +66,6 @@ public class Insert extends Operator {
         Tuple tuple = new Tuple(getTupleDesc());
         tuple.setField(0, new IntField(count));
         tupleList.add(tuple);
-        //System.out.println(tuple + "~~~");
         iterator = tupleList.iterator();
         super.open();
     }

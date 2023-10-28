@@ -1,9 +1,14 @@
 package simpledb.storage;
 
 import simpledb.common.Database;
+import simpledb.common.DbException;
+import simpledb.transaction.TransactionAbortedException;
+import simpledb.transaction.TransactionId;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BufferHash {
@@ -14,7 +19,7 @@ public class BufferHash {
     public Page getPage(PageId pid) {
         return dd.map.get(pid);
     }
-    public void insert(PageId pid, Page pg) {
+    public void insert(PageId pid, Page pg) throws DbException {
         dd.insert(pid, pg);
     }
     public void del(PageId pid) {
@@ -22,6 +27,15 @@ public class BufferHash {
     }
     public void flushPage(PageId pid) {
         dd.flushPage(pid);
+    }
+    public ConcurrentHashMap<PageId, Page> getMap() {
+        return dd.map;
+    }
+    public void markDirty(PageId pid, boolean flag, TransactionId tid) {
+        dd.map.get(pid).markDirty(flag, tid);
+    }
+    public boolean ifPageInBuffer(PageId pid) {
+        return dd.map.get(pid) != null;
     }
 
     public abstract static class Die {
@@ -37,7 +51,7 @@ public class BufferHash {
                 throw new RuntimeException(e);
             }
         }
-        public abstract void insert(PageId pid, Page pg);
+        public abstract void insert(PageId pid, Page pg) throws DbException;
         public abstract void del(PageId pid);
     }
 
@@ -47,10 +61,20 @@ public class BufferHash {
             super(numPages);
         }
         @Override
-        public void insert(PageId pid, Page pg) {
+        public void insert(PageId pid, Page pg) throws DbException {
+            if(super.map.get(pid) != null) {
+                super.map.put(pid, pg); return;
+            }
             if(super.map.size() >= super.numPages) {
-                PageId delId = queue.getFirst(); queue.removeFirst();
-                super.flushPage(delId);
+                boolean flag = false;
+                for(PageId pr : queue) {
+                    if(map.get(pr).isDirty() == null) {
+                        flushPage(pr); flag = true;
+                        queue.remove(pr); break;
+                    }
+                }
+                if(! flag)
+                    throw new DbException("do not have available clear page");
             }
             if(super.map.get(pid) == null)
                 queue.add(pid);

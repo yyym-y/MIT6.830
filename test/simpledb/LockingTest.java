@@ -6,12 +6,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import junit.framework.JUnit4TestAdapter;
 import simpledb.common.Database;
+import simpledb.common.LockManager;
 import simpledb.common.Permissions;
 import simpledb.common.Utility;
 import simpledb.storage.BufferPool;
 import simpledb.storage.HeapPageId;
 import simpledb.storage.PageId;
 import simpledb.transaction.TransactionId;
+
+import java.util.concurrent.locks.Lock;
 
 public class LockingTest extends TestUtil.CreateHeapFile {
   private PageId p0;
@@ -42,13 +45,11 @@ public class LockingTest extends TestUtil.CreateHeapFile {
 
     // if this fails, complain to the TA
     assertEquals(3, empty.numPages());
-
     this.p0 = new HeapPageId(empty.getId(), 0);
     this.p1 = new HeapPageId(empty.getId(), 1);
-      PageId p2 = new HeapPageId(empty.getId(), 2);
+    PageId p2 = new HeapPageId(empty.getId(), 2);
     this.tid1 = new TransactionId();
     this.tid2 = new TransactionId();
-
     // forget about locks associated to tid, so they don't conflict with
     // test cases
     bp.getPage(tid, p0, Permissions.READ_WRITE).markDirty(true, tid);
@@ -56,6 +57,7 @@ public class LockingTest extends TestUtil.CreateHeapFile {
     bp.getPage(tid, p2, Permissions.READ_WRITE).markDirty(true, tid);
     bp.flushAllPages();
     bp = Database.resetBufferPool(BufferPool.DEFAULT_PAGES);
+    System.out.println("----");
   }
 
   /**
@@ -74,9 +76,8 @@ public class LockingTest extends TestUtil.CreateHeapFile {
       TransactionId tid1, PageId pid1, Permissions perm1,
       TransactionId tid2, PageId pid2, Permissions perm2,
       boolean expected) throws Exception {
-
-    bp.getPage(tid1, pid1, perm1);
-    grabLock(tid2, pid2, perm2, expected);
+      bp.getPage(tid1, pid1, perm1);
+      grabLock(tid2, pid2, perm2, expected);
   }
 
   /**
@@ -100,7 +101,7 @@ public class LockingTest extends TestUtil.CreateHeapFile {
     assertEquals(expected, t.acquired());
 
     // TODO(ghuo): yes, stop() is evil, but this is unit test cleanup
-    t.stop();
+    t.interrupt();
   }
 
   /**

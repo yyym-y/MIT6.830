@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
+import simpledb.common.LockManager;
 import simpledb.execution.Delete;
 import simpledb.execution.Insert;
 import simpledb.execution.Query;
@@ -22,6 +23,8 @@ import simpledb.storage.*;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+
+import javax.xml.crypto.Data;
 
 import static org.junit.Assert.*;
 
@@ -50,14 +53,17 @@ public class TransactionTest extends SimpleDbTestBase {
         for (XactionTester tester : list) {
             long timeout = stopTestTime - System.currentTimeMillis();
             if (timeout <= 0) {
+                System.out.println("fail 1");
                 fail("Timed out waiting for transaction to complete");
             }
             try {
                 tester.join(timeout);
             } catch (InterruptedException e) {
+                System.out.println("----");
                 throw new RuntimeException(e);
             }
             if (tester.isAlive()) {
+                System.out.println("fail 2");
                 fail("Timed out waiting for transaction to complete");
             }
 
@@ -120,12 +126,10 @@ public class TransactionTest extends SimpleDbTestBase {
 
                         // race the other threads to finish the transaction: one will win
                         q1.close();
-
                         // delete old values (i.e., just one row) from table
                         Delete delOp = new Delete(tr.getId(), ss2);
 
                         Query q2 = new Query(delOp, tr.getId());
-
                         q2.start();
                         q2.next();
                         q2.close();
@@ -141,7 +145,6 @@ public class TransactionTest extends SimpleDbTestBase {
                         q3.start();
                         q3.next();
                         q3.close();
-
                         tr.commit();
                         break;
                     } catch (TransactionAbortedException te) {
@@ -219,6 +222,11 @@ public class TransactionTest extends SimpleDbTestBase {
         validateTransactions(1);
     }
 
+    @Test public void testMyThread()
+            throws IOException, DbException, TransactionAbortedException {
+        validateTransactions(20);
+    }
+
     @Test public void testTwoThreads()
             throws IOException, DbException, TransactionAbortedException {
         validateTransactions(2);
@@ -232,6 +240,11 @@ public class TransactionTest extends SimpleDbTestBase {
     @Test public void testTenThreads()
     throws IOException, DbException, TransactionAbortedException {
         validateTransactions(10);
+    }
+
+    @Test public void testThereThreads()
+            throws IOException, DbException, TransactionAbortedException {
+        validateTransactions(3);
     }
 
     @Test public void testAllDirtyFails()

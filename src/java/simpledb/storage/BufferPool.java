@@ -1,17 +1,18 @@
 package simpledb.storage;
 
-import simpledb.common.Database;
-import simpledb.common.Permissions;
-import simpledb.common.DbException;
-import simpledb.common.DeadlockException;
+import simpledb.common.*;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -62,6 +63,7 @@ public class BufferPool {
     public static void resetPageSize() {
     	BufferPool.pageSize = DEFAULT_PAGE_SIZE;
     }
+    public  LockManager lockManager = new LockManager();
 
     /**
      * Retrieve the specified page with the associated permissions.
@@ -80,12 +82,17 @@ public class BufferPool {
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-        Page pg = map.getPage(pid);
-        if(pg != null) return pg;
-        DbFile db = Database.getCatalog().getDatabaseFile(pid.getTableId());
-        pg = db.readPage(pid);
-        map.insert(pid, pg);
-        return pg;
+        synchronized (new Object()) {
+            lockManager.addLock(pid, tid, perm);
+            Page pg = map.getPage(pid);
+            if (pg != null) {
+                return pg;
+            }
+            DbFile db = Database.getCatalog().getDatabaseFile(pid.getTableId());
+            pg = db.readPage(pid);
+            map.insert(pid, pg);
+            return pg;
+        }
     }
 
     /**
@@ -98,8 +105,7 @@ public class BufferPool {
      * @param pid the ID of the page to unlock
      */
     public  void unsafeReleasePage(TransactionId tid, PageId pid) {
-        // some code goes here
-        // not necessary for lab1|lab2
+        lockManager.releaseExactLock(tid, pid);
     }
 
     /**
@@ -108,15 +114,25 @@ public class BufferPool {
      * @param tid the ID of the transaction requesting the unlock
      */
     public void transactionComplete(TransactionId tid) {
-        // some code goes here
-        // not necessary for lab1|lab2
+        Set<PageId> tidOfPage = lockManager.getTidPage(tid);
+        lockManager.releaseTidLock(tid);
+        for(PageId pr : tidOfPage) {
+            if(! map.ifPageInBuffer(pr))
+                continue;
+            map.markDirty(pr, false, null);
+            DbFile dbFile = Database.getCatalog().getDatabaseFile(pr.getTableId());
+            try {
+                dbFile.writePage(map.getPage(pr));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
     public boolean holdsLock(TransactionId tid, PageId p) {
-        // some code goes here
-        // not necessary for lab1|lab2
-        return false;
+//        return LockManager.ifPageHaveLock(p) && tid.equals(LockManager.getLockPageTid(p));
+        return true;
     }
 
     /**
@@ -127,12 +143,22 @@ public class BufferPool {
      * @param commit a flag indicating whether we should commit or abort
      */
     public void transactionComplete(TransactionId tid, boolean commit) {
-        // some code goes here
-        // not necessary for lab1|lab2
+        if(commit) {
+            transactionComplete(tid);
+        } else {
+            Set<PageId> pageIds = lockManager.getTidPage(tid);
+            for(PageId pr : pageIds)
+                map.del(pr);
+            lockManager.releaseTidLock(tid);
+        }
     }
 
-    public void resetPage(Page p) {
-        map.insert(p.getId(), p);
+    public void resetPage(Page p){
+        try {
+            map.insert(p.getId(), p);
+        } catch (DbException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -188,9 +214,14 @@ public class BufferPool {
      *     break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        // some code goes here
-        // not necessary for lab1
-
+        ConcurrentHashMap<PageId, Page> hashMap = map.getMap();
+        for(Map.Entry<PageId, Page> pr : hashMap.entrySet()) {
+            TransactionId tid = pr.getValue().isDirty();
+            if(tid == null) continue;
+            DbFile db = Database.getCatalog().getDatabaseFile(pr.getKey().getTableId());
+            db.writePage(pr.getValue());
+        }
+        lockManager.releaseAllLock();
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -225,7 +256,12 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized  void evictPage() throws DbException {
-        // some code goes here
-        // not necessary for lab1
+//        ConcurrentHashMap<PageId, Page> hashMap = map.getMap();
+//        for(Map.Entry<PageId, Page> pr : hashMap.entrySet()) {
+//            TransactionId tid = pr.getValue().isDirty();
+//            if(tid == null) continue;
+//            map.markDirty(pr.getKey(), false, null);
+//            map.flushPage(pr.getKey());
+//        }
     }
 }

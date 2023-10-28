@@ -44,3 +44,4 @@ https://github.com/MIT-DB-Class/simple-db-hw-2022
 
 * lab 3：2023 - 10 - 13 【笔记待定】
   * 2023 -10 -16 【笔记完成】
+* lab 4：2023 - 10 - 28 【笔记待定】 
