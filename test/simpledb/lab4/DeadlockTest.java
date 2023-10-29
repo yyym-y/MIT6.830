@@ -1,5 +1,6 @@
-package simpledb;
+package simpledb.lab4;
 
+import simpledb.TestUtil;
 import simpledb.TestUtil.LockGrabber;
 
 import java.util.*;

@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 
 public class LockManager {
     public static class PageLock {
-        private PageId pid;
-        private Permissions lockType;
+        private PageId pid; // 记录这个页锁锁住的 Page 的 id
+        private Permissions lockType; // 记录锁住这个页的锁的我类型，记录是读锁还是写锁
         public PageLock(PageId pid, Permissions lockType) {
             this.pid = pid;
             this.lockType = lockType;
@@ -29,10 +29,12 @@ public class LockManager {
         }
         @Override
         public int hashCode() {
+            // 注意： 哈希值只是用了 pid 的哈希值，没有使用锁类型的哈希值
             return pid.hashCode();
         }
         @Override
         public boolean equals(Object o) {
+            // 比较也只是比较 pid， 没有比较锁类型
             if(o == null) return false;
             if(o.getClass() != getClass()) return false;
             PageLock other = (PageLock) o;
@@ -81,6 +83,7 @@ public class LockManager {
             }
             return false;
         }
+        // 判断是否有环
         public synchronized boolean ifCircle() {
             check = new HashSet<>();
             if(graph.size() <= 1) return false;
@@ -102,7 +105,9 @@ public class LockManager {
     private final ConcurrentHashMap<PageId, HashSet<TransactionId>> pageIdToTran = new ConcurrentHashMap<>();
     // 获取这个事务曾经获得过的所有页级锁
     private final ConcurrentHashMap<TransactionId, HashSet<PageLock>> tranToPageId = new ConcurrentHashMap<>();
+    // 获取这个页当前被几个页面拥有了读锁
     volatile ConcurrentHashMap<PageId, Integer> readNum = new ConcurrentHashMap<>();
+    // 判断这个页是否被某个页面拥有了写锁
     volatile ConcurrentHashMap<PageId, Boolean> ifWrite = new ConcurrentHashMap<>();
     volatile DirectedGraph g = new DirectedGraph();
 
@@ -115,6 +120,7 @@ public class LockManager {
         readNum.merge(pid, -1, Integer::sum);
     }
     public synchronized Integer getReadNum(PageId pid) {
+        if(readNum.get(pid) == null) return 0;
         return readNum.get(pid);
     }
     public synchronized void setWrite(PageId pid) {
@@ -124,6 +130,7 @@ public class LockManager {
         ifWrite.put(pid, false);
     }
     public synchronized Boolean getIfWrite(PageId pid) {
+        if(ifWrite.get(pid) == null) return false;
         return ifWrite.get(pid);
     }
 
@@ -131,12 +138,15 @@ public class LockManager {
 
     public synchronized void addLock(PageId pid, TransactionId tid, Permissions prem) throws TransactionAbortedException {
         HashSet<TransactionId> pageOfTran = pageIdToTran.get(pid); // 这个页面现在被哪些事务拿着锁
+        // 如果这个页面当前没有给任何事务拿到任何锁
         if(pageOfTran == null) {
             notLockBefore(pid, tid, prem);
         } else {
+            // 我想申请读锁， 但这个页面被某些事务拿到了某些锁
             if(prem.equals(Permissions.READ_ONLY)) {
                 addReadLock(pid, tid);
             } else {
+            // 我想申请写锁， 但这个页面被某些事务拿到了某些锁
                 addWriteLock(pid, tid);
             }
         }
@@ -158,27 +168,16 @@ public class LockManager {
         if(pageOfTran.contains(tid)) // 如果这个页面被这个事务已经拿了锁了， 直接返回
             return;
         // 否则，就需要判断是否等其他事务的锁释放，值得注意的是，如果申请的是读锁，那么需要等写锁释放
-        for(TransactionId first_tid : pageOfTran) {
-            for(PageLock plk : tranToPageId.get(first_tid)) {
-                if(plk.getPid().equals(pid) && plk.getLockType().equals(Permissions.READ_WRITE)) {
-                    // 找到这个持有这个页的写锁的事务
-                    g.addEdge(first_tid, tid);
-                }
-            }
-        }
+        TransactionId first_tid = pageIdToTran.get(pid).iterator().next();
+        if(getIfWrite(pid))
+            g.addEdge(first_tid, tid);
         if(g.ifCircle()) {
             // 如果有环产生， 那么代表有死锁
-            for(TransactionId first_tid : pageOfTran) {
-                for(PageLock plk : tranToPageId.get(first_tid)) {
-                    if(plk.getPid().equals(pid) && plk.getLockType().equals(Permissions.READ_WRITE)) {
-                        // 找到这个持有这个页的写锁的事务
-                        g.removeEdge(first_tid, tid);
-                    }
-                }
-            }
+            if(getIfWrite(pid))
+                g.removeEdge(first_tid, tid);
             throw new TransactionAbortedException();
         }
-        while (getIfWrite(pid) != null && getIfWrite(pid).equals(Boolean.TRUE)) {
+        while (getIfWrite(pid)) {
             try {
                 this.wait();
             } catch (InterruptedException e) {
@@ -186,6 +185,7 @@ public class LockManager {
             }
         }
         addRead(pid);
+        pageIdToTran.computeIfAbsent(pid, k -> new HashSet<>());
         pageIdToTran.get(pid).add(tid);
         tranToPageId.computeIfAbsent(tid, k -> new HashSet<>());
         tranToPageId.get(tid).add(new PageLock(pid, Permissions.READ_ONLY));
@@ -202,28 +202,18 @@ public class LockManager {
         throw new TransactionAbortedException();
     }
     public synchronized void addWriteLockButUpdate(PageId pid, TransactionId tid) throws TransactionAbortedException {
-
         HashSet<TransactionId> pageOfTran = pageIdToTran.get(pid); // 这个页面现在被哪些事务拿着锁
         HashSet<PageLock> tranOfPage = tranToPageId.get(tid); // 这个事务现在拿着哪些页的锁
-        // 如果这个页面被这个事务已经拿了锁了, 判断拿的锁的类型
-        // 先获取这个锁：
-        PageLock nowPlk = null;
-        for(PageLock plk : tranOfPage) {
-            if(plk.getPid().equals(pid)) {
-                nowPlk = plk; break;
-            }
-        }
-        if(nowPlk == null)
-            throw new TransactionAbortedException();
-        if(nowPlk.getLockType().equals(Permissions.READ_WRITE))
+        // 刚好我自己拿着写锁
+        if(getIfWrite(pid) && getReadNum(pid).equals(0))
             return;
-        // 如果发现当前的锁是读锁， 那么考虑是否能吧它升级为写锁
-        // 如果就我一个人拿着写锁， 则直接升级
-        if(getReadNum(pid).equals(1)) {
+        // 只有我一个人拿着读锁
+        if(getIfWrite(pid).equals(Boolean.FALSE) && getReadNum(pid).equals(1)) {
             updateReadToWrite(pid, tid); return;
         }
-        // 将所有需要释放的事务加上边
+        // 不止我一个人拿着读锁
         for(TransactionId first_tid : pageOfTran) {
+            // 要等待除了我自己的其他事务完成
             if(first_tid.equals(tid)) continue;
             g.addEdge(first_tid, tid);
         }
@@ -263,13 +253,13 @@ public class LockManager {
             }
         }
         setWrite(pid);
+        pageIdToTran.computeIfAbsent(pid, k -> new HashSet<>());
         pageIdToTran.get(pid).add(tid);
         tranToPageId.computeIfAbsent(tid, k -> new HashSet<>());
         tranToPageId.get(tid).add(new PageLock(pid, Permissions.READ_WRITE));
     }
     public synchronized void addWriteLock(PageId pid, TransactionId tid) throws TransactionAbortedException {
         HashSet<TransactionId> pageOfTran = pageIdToTran.get(pid); // 这个页面现在被哪些事务拿着锁
-        HashSet<PageLock> tranOfPage = tranToPageId.get(tid); // 这个事务现在拿着哪些页的锁
         if(pageOfTran.contains(tid)) {
             addWriteLockButUpdate(pid, tid);
         } else {
@@ -295,6 +285,7 @@ public class LockManager {
         notifyAll();
     }
     public synchronized void releaseExactLock(TransactionId tid, PageId pid) {
+        // 这里没有对计数器递减， 因为操作本身就是不安全的
         pageIdToTran.get(pid).remove(tid);
         tranToPageId.get(tid).remove(new PageLock(pid, null));
         notifyAll();

@@ -131,7 +131,6 @@ public class BufferPool {
 
     /** Return true if the specified transaction has a lock on the specified page */
     public boolean holdsLock(TransactionId tid, PageId p) {
-//        return LockManager.ifPageHaveLock(p) && tid.equals(LockManager.getLockPageTid(p));
         return true;
     }
 

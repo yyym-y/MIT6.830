@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab4.sys;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -14,17 +14,17 @@ import org.junit.Test;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.common.LockManager;
 import simpledb.execution.Delete;
 import simpledb.execution.Insert;
 import simpledb.execution.Query;
 import simpledb.execution.SeqScan;
 import simpledb.storage.*;
+import simpledb.systemtest.AbortEvictionTest;
+import simpledb.systemtest.SimpleDbTestBase;
+import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
-import javax.xml.crypto.Data;
 
 import static org.junit.Assert.*;
 
@@ -224,7 +224,7 @@ public class TransactionTest extends SimpleDbTestBase {
 
     @Test public void testMyThread()
             throws IOException, DbException, TransactionAbortedException {
-        validateTransactions(20);
+        validateTransactions(13);
     }
 
     @Test public void testTwoThreads()

@@ -307,7 +307,7 @@ public class TestUtil {
      * @return a handle to the Thread that will attempt lock acquisition after it
      *   has been started
      */
-    static class LockGrabber extends Thread {
+    public static class LockGrabber extends Thread {
 
         final TransactionId tid;
         final PageId pid;

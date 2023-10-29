@@ -1,9 +1,10 @@
-package simpledb;
+package simpledb.lab4;
 
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import junit.framework.JUnit4TestAdapter;
+import simpledb.TestUtil;
 import simpledb.common.Database;
 import simpledb.common.Permissions;
 import simpledb.common.Utility;

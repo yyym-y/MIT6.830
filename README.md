@@ -27,6 +27,7 @@ https://github.com/MIT-DB-Class/simple-db-hw-2022
 * lab 1  ： [MIT 6.830日寄-lab1 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/658169665)
 * lab 2  ： [MIT 6.830日寄-lab2 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/660173608)
 * lab 3  ：[MIT 6.830日寄-lab3 【附查询优化原理】 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/661600624)
+* lab 4 ： [MIT 6.830日寄-lab4 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/663933622)
 
 .....未完待续
 
@@ -45,3 +46,4 @@ https://github.com/MIT-DB-Class/simple-db-hw-2022
 * lab 3：2023 - 10 - 13 【笔记待定】
   * 2023 -10 -16 【笔记完成】
 * lab 4：2023 - 10 - 28 【笔记待定】 
+  * 2023 - 10 - 29 【笔记完成】
