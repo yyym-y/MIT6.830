@@ -1,10 +1,11 @@
-package simpledb.systemtest;
+package simpledb.lab4;
 
 import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.Collections;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import simpledb.common.Database;
@@ -13,6 +14,8 @@ import simpledb.common.Utility;
 import simpledb.execution.Insert;
 import simpledb.execution.SeqScan;
 import simpledb.storage.*;
+import simpledb.systemtest.SimpleDbTestBase;
+import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 
@@ -33,7 +36,7 @@ public class AbortEvictionTest extends SimpleDbTestBase {
         Insert insert = new Insert(t.getId(), insertRow, f.getId());
         insert.open();
         Tuple result = insert.next();
-        assertEquals(SystemTestUtil.SINGLE_INT_DESCRIPTOR, result.getTupleDesc());
+        Assert.assertEquals(SystemTestUtil.SINGLE_INT_DESCRIPTOR, result.getTupleDesc());
         assertEquals(1, ((IntField)result.getField(0)).getValue());
         assertFalse(insert.hasNext());
         insert.close();

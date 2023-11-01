@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab5;
 
 import junit.framework.JUnit4TestAdapter;
 

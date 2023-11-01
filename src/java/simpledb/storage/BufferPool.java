@@ -116,12 +116,14 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) {
         Set<PageId> tidOfPage = lockManager.getTidPage(tid);
         lockManager.releaseTidLock(tid);
+        if(tidOfPage == null) return;
         for(PageId pr : tidOfPage) {
             if(! map.ifPageInBuffer(pr))
                 continue;
             map.markDirty(pr, false, null);
             DbFile dbFile = Database.getCatalog().getDatabaseFile(pr.getTableId());
             try {
+                if(map.getPage(pr) == null) continue;
                 dbFile.writePage(map.getPage(pr));
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -146,9 +148,10 @@ public class BufferPool {
             transactionComplete(tid);
         } else {
             Set<PageId> pageIds = lockManager.getTidPage(tid);
+            lockManager.releaseTidLock(tid);
+            if(pageIds == null) return;
             for(PageId pr : pageIds)
                 map.del(pr);
-            lockManager.releaseTidLock(tid);
         }
     }
 

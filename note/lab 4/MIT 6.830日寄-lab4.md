@@ -426,9 +426,9 @@ public synchronized void releaseAllLock() {
 
 
 
-当你完成这个类的时候，你可以通过 TransactionTest ， LockingTest ， DeadlockTest ， 
+当你完成这个类的时候，你可以通过 TransactionTest ， LockingTest ， DeadlockTest
 
-除此之外还需通过 systemtest / TransactionTest
+除此之外还需通过 systemtest / TransactionTest ， systemtest / AbortEvictionTest
 
 -----
 

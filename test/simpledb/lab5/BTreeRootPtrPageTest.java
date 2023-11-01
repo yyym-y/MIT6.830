@@ -1,4 +1,4 @@
-package simpledb;
+package simpledb.lab5;
 
 import simpledb.TestUtil.SkeletonFile;
 import simpledb.common.Database;

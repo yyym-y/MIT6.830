@@ -155,9 +155,9 @@ public class HeapFile implements DbFile {
         }
         HeapPage hpg = new HeapPage(new HeapPageId(id, numPages()), new byte[BufferPool.getPageSize()]);
         t.setRecordId(new RecordId(new HeapPageId(id, numPages()), 0));
-        writePage(hpg);
         hpg.markDirty(true, tid);
         hpg.insertTuple(t);
+        writePage(hpg);
         return List.of(new Page[]{hpg});
     }
 

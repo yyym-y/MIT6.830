@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab5.sys;
 
 import simpledb.common.Database;
 import simpledb.common.Permissions;
@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
 import junit.framework.JUnit4TestAdapter;
 import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
+import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.transaction.TransactionId;
 
 public class BTreeFileInsertTest extends SimpleDbTestBase {

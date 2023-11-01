@@ -8,6 +8,7 @@ import simpledb.transaction.TransactionId;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 public class LockManager {
@@ -109,7 +110,14 @@ public class LockManager {
     volatile ConcurrentHashMap<PageId, Integer> readNum = new ConcurrentHashMap<>();
     // 判断这个页是否被某个页面拥有了写锁
     volatile ConcurrentHashMap<PageId, Boolean> ifWrite = new ConcurrentHashMap<>();
+    // 判断这个页面是否被某个事务申请由读锁申请写锁
+    volatile ConcurrentHashMap<PageId, TransactionId> ifWaitUpdate = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<TransactionId, HashSet<PageId>> getWaitUpdateList = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<TransactionId, Long> timeController = new ConcurrentHashMap<>();
     volatile DirectedGraph g = new DirectedGraph();
+    public static final long MAX_RUN_TIME = 2000;
+    public static final long WAIT_TIME = 100;
+
 
     // ---------------------- It's all tool functions below -------------------------------------------//
 
@@ -133,7 +141,34 @@ public class LockManager {
         if(ifWrite.get(pid) == null) return false;
         return ifWrite.get(pid);
     }
-
+    public synchronized Boolean getIfWaitUpdate(PageId pid) {
+        if(ifWaitUpdate.get(pid) == null) return false;
+        return true;
+    }
+    public synchronized void setWaitUpdate(PageId pid, TransactionId tid) {
+        ifWaitUpdate.put(pid, tid);
+    }
+    public synchronized void setUnwaitUpdate(PageId pid) {
+        ifWaitUpdate.remove(pid);
+    }
+    public synchronized void sandglass(TransactionId tid) throws TransactionAbortedException {
+        if(timeController.get(tid) == null)
+            timeController.put(tid, System.currentTimeMillis());
+        else {
+            long times = System.currentTimeMillis() - timeController.get(tid);
+            if(times >= MAX_RUN_TIME) {
+                throw new TransactionAbortedException();
+            }
+        }
+    }
+    public synchronized void addTidWaitPidList(TransactionId tid, PageId pid) {
+        getWaitUpdateList.computeIfAbsent(tid, k -> new HashSet<>());
+        getWaitUpdateList.get(tid).add(pid);
+    }
+    public synchronized void removeTidWaitList(TransactionId tid, PageId pid) {
+        if(getWaitUpdateList.get(tid) == null) return;
+        getWaitUpdateList.get(tid).remove(pid);
+    }
     // ---------------------- It's all add lock functions below -------------------------------------------//
 
     public synchronized void addLock(PageId pid, TransactionId tid, Permissions prem) throws TransactionAbortedException {
@@ -167,6 +202,10 @@ public class LockManager {
         HashSet<TransactionId> pageOfTran = pageIdToTran.get(pid); // 这个页面现在被哪些事务拿着锁
         if(pageOfTran.contains(tid)) // 如果这个页面被这个事务已经拿了锁了， 直接返回
             return;
+        // 如果这个页面正在等待升级， 那么就不能再申请读锁了
+        if(getIfWaitUpdate(pid).equals(Boolean.TRUE)) {
+            throw new TransactionAbortedException();
+        }
         // 否则，就需要判断是否等其他事务的锁释放，值得注意的是，如果申请的是读锁，那么需要等写锁释放
         TransactionId first_tid = pageIdToTran.get(pid).iterator().next();
         if(getIfWrite(pid))
@@ -179,6 +218,7 @@ public class LockManager {
         }
         while (getIfWrite(pid)) {
             try {
+                sandglass(tid);
                 this.wait();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -203,7 +243,6 @@ public class LockManager {
     }
     public synchronized void addWriteLockButUpdate(PageId pid, TransactionId tid) throws TransactionAbortedException {
         HashSet<TransactionId> pageOfTran = pageIdToTran.get(pid); // 这个页面现在被哪些事务拿着锁
-        HashSet<PageLock> tranOfPage = tranToPageId.get(tid); // 这个事务现在拿着哪些页的锁
         // 刚好我自己拿着写锁
         if(getIfWrite(pid) && getReadNum(pid).equals(0))
             return;
@@ -212,6 +251,7 @@ public class LockManager {
             updateReadToWrite(pid, tid); return;
         }
         // 不止我一个人拿着读锁
+        //throw new TransactionAbortedException();
         for(TransactionId first_tid : pageOfTran) {
             // 要等待除了我自己的其他事务完成
             if(first_tid.equals(tid)) continue;
@@ -224,13 +264,18 @@ public class LockManager {
             }
             throw new TransactionAbortedException();
         }
+        setWaitUpdate(pid, tid);
+        addTidWaitPidList(tid, pid);
         while (! getReadNum(pid).equals(1)) {
             try {
+                sandglass(tid);
                 this.wait();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
+        setUnwaitUpdate(pid);
+        removeTidWaitList(tid, pid);
         updateReadToWrite(pid, tid);
         setWrite(pid);
     }
@@ -247,6 +292,7 @@ public class LockManager {
         }
         if(getReadNum(pid) !=  null && ! getReadNum(pid).equals(0)) {
             try {
+                sandglass(tid);
                 this.wait();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -271,6 +317,7 @@ public class LockManager {
 
     public synchronized void releaseTidLock(TransactionId tid) {
         HashSet<PageLock> tranOfPage = tranToPageId.get(tid); // 这个事务现在拿着哪些页的锁
+        if(tranOfPage == null) return;
         for(PageLock plk : tranOfPage) {
             if(plk.getLockType().equals(Permissions.READ_ONLY)) {
                 delRead(plk.getPid());
@@ -282,6 +329,12 @@ public class LockManager {
         }
         g.removeNode(tid);
         tranToPageId.remove(tid);
+        timeController.remove(tid);
+        if(getWaitUpdateList.get(tid) != null) {
+            for(PageId pid : getWaitUpdateList.get(tid))
+                setUnwaitUpdate(pid);
+            getWaitUpdateList.remove(tid);
+        }
         notifyAll();
     }
     public synchronized void releaseExactLock(TransactionId tid, PageId pid) {
@@ -293,6 +346,8 @@ public class LockManager {
     public synchronized void releaseAllLock() {
         pageIdToTran.clear(); tranToPageId.clear();
         readNum.clear(); ifWrite.clear(); g = new DirectedGraph();
+        timeController = new ConcurrentHashMap<>(); ifWaitUpdate = new ConcurrentHashMap<>();
+        getWaitUpdateList = new ConcurrentHashMap<>();
         notifyAll();
     }
 
@@ -342,6 +397,7 @@ public class LockManager {
         System.out.println("ALL Write Info:");
         getAllWriteNum();
         g.showGraph();
+        System.out.println("***********************************");
     }
     public synchronized void getWaitInfo(PageId pid) {
         System.out.println(pid + " " + getReadNum(pid) + " " + getIfWrite(pid));
@@ -351,6 +407,8 @@ public class LockManager {
                     System.out.println(plk);
             }
         }
+        g.showGraph();
         System.out.println("-------------------------------");
+        printAllInfo();
     }
 }

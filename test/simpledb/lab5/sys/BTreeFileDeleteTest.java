@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab5.sys;
 
 import simpledb.common.Database;
 import simpledb.common.Permissions;
@@ -16,6 +16,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import junit.framework.JUnit4TestAdapter;
 import simpledb.storage.Tuple;
+import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.transaction.TransactionId;
 
 public class BTreeFileDeleteTest extends SimpleDbTestBase {
@@ -174,7 +175,7 @@ public class BTreeFileDeleteTest extends SimpleDbTestBase {
 
 		// now there should be 2 leaf pages, 1 internal page, 1 unused leaf page, 1 header page
 		assertEquals(5, threeLeafPageFile.numPages());
-
+		BTreeChecker.checkRep(threeLeafPageFile, tid, new HashMap<>(), true);
 		// insert enough tuples to ensure one of the leaf pages splits
 		for(int i = 0; i < 502; ++i) {
 			Database.getBufferPool().insertTuple(tid, threeLeafPageFile.getId(),

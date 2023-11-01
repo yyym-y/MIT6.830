@@ -1,4 +1,4 @@
-package simpledb.systemtest;
+package simpledb.lab5.sys;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
@@ -18,6 +18,8 @@ import simpledb.index.BTreeFile;
 import simpledb.index.BTreeScan;
 import simpledb.index.BTreeUtility;
 import simpledb.storage.*;
+import simpledb.systemtest.SimpleDbTestBase;
+import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

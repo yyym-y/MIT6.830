@@ -19,7 +19,7 @@ import simpledb.execution.Insert;
 import simpledb.execution.Query;
 import simpledb.execution.SeqScan;
 import simpledb.storage.*;
-import simpledb.systemtest.AbortEvictionTest;
+import simpledb.lab4.AbortEvictionTest;
 import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.systemtest.SystemTestUtil;
 import simpledb.transaction.Transaction;
@@ -105,6 +105,7 @@ public class TransactionTest extends SimpleDbTestBase {
                     latch.await();
                     Transaction tr = new Transaction();
                     try {
+                        //System.out.println(Thread.currentThread().getName());
                         tr.start();
                         SeqScan ss1 = new SeqScan(tr.getId(), tableId, "");
                         SeqScan ss2 = new SeqScan(tr.getId(), tableId, "");
@@ -146,9 +147,10 @@ public class TransactionTest extends SimpleDbTestBase {
                         q3.next();
                         q3.close();
                         tr.commit();
+                        //Database.getBufferPool().lockManager.printAllInfo();
                         break;
                     } catch (TransactionAbortedException te) {
-                        //System.out.println("thread " + tr.getId() + " killed");
+                        //System.out.println("thread " + Thread.currentThread().getName() + " " + tr.getId() + " killed");
                         // give someone else a chance: abort the transaction
                         tr.transactionComplete(true);
                         latch.stillParticipating();
@@ -224,7 +226,7 @@ public class TransactionTest extends SimpleDbTestBase {
 
     @Test public void testMyThread()
             throws IOException, DbException, TransactionAbortedException {
-        validateTransactions(13);
+        validateTransactions(100);
     }
 
     @Test public void testTwoThreads()

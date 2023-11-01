@@ -1,5 +1,6 @@
-package simpledb;
+package simpledb.lab5;
 
+import simpledb.TestUtil;
 import simpledb.common.Database;
 import simpledb.index.BTreeFileEncoder;
 import simpledb.index.BTreeFileEncoder.TupleComparator;
