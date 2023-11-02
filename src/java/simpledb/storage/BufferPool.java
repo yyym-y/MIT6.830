@@ -38,7 +38,7 @@ public class BufferPool {
 
     private final int numPages;
 
-    private final BufferHash map;
+    public final BufferHash map;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -124,6 +124,9 @@ public class BufferPool {
             DbFile dbFile = Database.getCatalog().getDatabaseFile(pr.getTableId());
             try {
                 if(map.getPage(pr) == null) continue;
+                map.getPage(pr).setBeforeImage();
+                Database.getLogFile().logWrite(tid, map.getPage(pr).getBeforeImage(), map.getPage(pr));
+                Database.getLogFile().force();
                 dbFile.writePage(map.getPage(pr));
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -220,8 +223,11 @@ public class BufferPool {
         for(Map.Entry<PageId, Page> pr : hashMap.entrySet()) {
             TransactionId tid = pr.getValue().isDirty();
             if(tid == null) continue;
+            Database.getLogFile().logWrite(tid, pr.getValue().getBeforeImage(), pr.getValue());
+            Database.getLogFile().force();
             DbFile db = Database.getCatalog().getDatabaseFile(pr.getKey().getTableId());
             db.writePage(pr.getValue());
+            map.setBeforeImage(pr.getKey());
         }
         lockManager.releaseAllLock();
     }

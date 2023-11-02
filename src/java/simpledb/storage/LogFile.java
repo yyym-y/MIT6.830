@@ -5,6 +5,7 @@ import simpledb.common.Database;
 import simpledb.transaction.TransactionId;
 import simpledb.common.Debug;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.*;
 import java.lang.reflect.*;
@@ -107,7 +108,7 @@ public class LogFile {
         @param f The log file's name
     */
     public LogFile(File f) throws IOException {
-	this.logFile = f;
+	    this.logFile = f;
         raf = new RandomAccessFile(f, "rw");
         recoveryUndecided = true;
 
@@ -179,7 +180,6 @@ public class LogFile {
         preAppend();
         Debug.log("COMMIT " + tid.getId());
         //should we verify that this is a live transaction?
-
         raf.writeInt(COMMIT_RECORD);
         raf.writeLong(tid.getId());
         raf.writeLong(currentOffset);
@@ -455,14 +455,46 @@ public class LogFile {
         @param tid The transaction to rollback
     */
     public void rollback(TransactionId tid)
-        throws NoSuchElementException, IOException {
+            throws NoSuchElementException, IOException {
         synchronized (Database.getBufferPool()) {
             synchronized(this) {
-                preAppend();
                 // some code goes here
+                preAppend();
+                long tidId = tid.getId();
+                Long begin = tidToFirstLogRecord.get(tidId);
+                raf.seek(begin);
+                while(true){
+                    try{
+                        int type = raf.readInt();
+                        Long curTid = raf.readLong();
+                        if(curTid!=tidId){
+                            //如果不是当前的tid，就直接跳过
+                            if(type==3){
+                                //update record 还要跳过页数据
+                                readPageData(raf);
+                                readPageData(raf);
+                            }
+                        }else{
+                            if(type==3){
+                                //只需要恢复到最初的状态就行
+                                Page before = readPageData(raf);
+                                Page after = readPageData(raf);
+                                DbFile databaseFile = Database.getCatalog().getDatabaseFile(before.getId().getTableId());
+                                databaseFile.writePage(before);
+                                Database.getBufferPool().discardPage(after.getId());
+                                raf.seek(raf.getFilePointer()+8);
+                                break;
+                            }
+                        }
+                        raf.seek(raf.getFilePointer()+8);
+                    }catch (EOFException e){
+                        break;
+                    }
+                }
             }
         }
     }
+
 
     /** Shutdown the logging system, writing out whatever state
         is necessary so that start up can happen quickly (without
@@ -478,6 +510,76 @@ public class LogFile {
         }
     }
 
+    public synchronized long getRecoverOffset(){
+        try {
+            raf.seek(0);
+            long checkPoint = raf.readLong();
+            if(checkPoint == -1){
+                return -1L;
+            }else {
+                // 移动到检查点,并略过日志头（type,tid信息）
+                raf.seek(checkPoint);
+                raf.readInt();
+                raf.readLong();
+                int keySize = raf.readInt();
+                long recoverOffset = Long.MAX_VALUE;
+                while (keySize-- > 0) {
+                    raf.readLong();
+                    long offset = raf.readLong();
+                    if(offset < recoverOffset){
+                        recoverOffset = offset;
+                    }
+                }
+                return recoverOffset;
+
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 从指定位置开始检索每一条记录，update记录就直接放入map中，commit就直接将最终page刷盘，abort就直接将开始前的page刷盘
+     * @param raf
+     * @param map
+     */
+    private void recoverSearch(RandomAccessFile raf,Map<Long,List<Page[]>> map) throws IOException {
+        while(true){
+            try{
+                int type = raf.readInt();
+                long curTid = raf.readLong();
+                if(type==3){
+                    //update
+                    if(!map.containsKey(curTid)){
+                        map.put(curTid,new ArrayList<>());
+                    }
+                    Page before = readPageData(raf);
+                    Page after = readPageData(raf);
+                    map.get(curTid).add(new Page[]{before,after});
+                }else if(type==2 && map.containsKey(curTid)){
+                    //commit
+                    Page[] pages = map.get(curTid).get(map.get(curTid).size() - 1);
+                    Page after = pages[1];
+                    DbFile databaseFile = Database.getCatalog().getDatabaseFile(after.getId().getTableId());
+                    databaseFile.writePage(after);
+                    map.remove(curTid);
+                }else if(type==1 && map.containsKey(curTid)){
+                    //abort
+                    Page[] pages = map.get(curTid).get(0);
+                    Page before = pages[0];
+                    DbFile databaseFile = Database.getCatalog().getDatabaseFile(before.getId().getTableId());
+                    databaseFile.writePage(before);
+                    map.remove(curTid);
+                }
+                raf.seek(raf.getFilePointer()+8);
+            }catch (EOFException e){
+                break;
+            }
+        }
+    }
+
+
     /** Recover the database system by ensuring that the updates of
         committed transactions are installed and that the
         updates of uncommitted transactions are not installed.
@@ -487,9 +589,43 @@ public class LogFile {
             synchronized (this) {
                 recoveryUndecided = false;
                 // some code goes here
+                HashMap<Long, List<Page[]>> undoMap = new HashMap<>();
+                raf.seek(0);
+                print();
+                long checkpoint = raf.readLong();
+                if(checkpoint!=-1){
+                    HashMap<Long, Long> tidPos = new HashMap<>();
+                    raf.seek(checkpoint);
+                    //跳过record type和tid
+                    raf.seek(raf.getFilePointer()+12);
+                    //获取正在进行事务的个数
+                    int num = raf.readInt();
+                    while(num>0){
+                        //获取每一个事务的tid和第一条log record OFFSET
+                        long curTid = raf.readLong();
+                        long offset = raf.readLong();
+                        tidPos.put(curTid,offset);
+                        num--;
+                    }
+                    for(Long pos:tidPos.keySet()){
+                        raf.seek(tidPos.get(pos));
+                        recoverSearch(raf,undoMap);
+                    }
+                }else{
+                    recoverSearch(raf, undoMap);
+                }
+                //进行undo操作
+                for(Long tid:undoMap.keySet()){
+                    Page[] pages = undoMap.get(tid).get(0);
+                    Page before = pages[0];
+                    DbFile databaseFile = Database.getCatalog().getDatabaseFile(before.getId().getTableId());
+                    databaseFile.writePage(before);
+                }
+                undoMap.clear();
             }
-         }
+        }
     }
+
 
     /** Print out a human readable represenation of the log */
     public void print() throws IOException {

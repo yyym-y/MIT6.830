@@ -48,7 +48,7 @@ public class Transaction {
             //write abort log record and rollback transaction
             if (abort) {
                 Database.getLogFile().logAbort(tid); //does rollback too
-            } 
+            }
 
             // Release locks and flush pages if needed
             Database.getBufferPool().transactionComplete(tid, !abort); // release locks
@@ -57,7 +57,7 @@ public class Transaction {
             if (!abort) {
             	Database.getLogFile().logCommit(tid);
             }
-
+            System.out.println(Database.getLogFile().getTotalRecords() + "???");
             //setting this here means we could possibly write multiple abort records -- OK?
             started = false;
         }

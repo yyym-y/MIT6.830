@@ -42,8 +42,9 @@ https://github.com/MIT-DB-Class/simple-db-hw-2022
 
   * 优化了 Join ， 实现了 LoopJoin， HashJoin， MergeSortJoin 2023-10-6
   * 完成笔记， 封装了 缓冲池 2023 - 10 - 8
-
 * lab 3：2023 - 10 - 13 【笔记待定】
   * 2023 -10 -16 【笔记完成】
 * lab 4：2023 - 10 - 28 【笔记待定】 
   * 2023 - 10 - 29 【笔记完成】
+* lab 5 ： 2023 - 11 - 1 【笔记待定】
+* lab 6 ：2023 - 11 - 2 【笔记待定】

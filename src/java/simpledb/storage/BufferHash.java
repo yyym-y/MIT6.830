@@ -37,6 +37,9 @@ public class BufferHash {
     public boolean ifPageInBuffer(PageId pid) {
         return dd.map.get(pid) != null;
     }
+    public void setBeforeImage(PageId pid) {
+        dd.map.get(pid).setBeforeImage();
+    }
 
     public abstract static class Die {
         public ConcurrentHashMap<PageId, Page> map = new ConcurrentHashMap<>();
@@ -45,7 +48,13 @@ public class BufferHash {
         public void flushPage(PageId pid) {
             DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
             try {
+                TransactionId tid = map.get(pid).isDirty();
+                if(tid != null) {
+                    Database.getLogFile().logWrite(tid, map.get(tid).getBeforeImage(), map.get(pid));
+                    Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(map.get(pid));
+                }
                 dbFile.writePage(map.get(pid));
+                map.get(pid).setBeforeImage();
                 map.remove(pid);
             } catch (IOException e) {
                 throw new RuntimeException(e);

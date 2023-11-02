@@ -70,6 +70,7 @@ public class LogTest extends SimpleDbTestBase {
     void doInsert(HeapFile hf, int t1, int t2)
         throws DbException, TransactionAbortedException, IOException {
         Transaction t = new Transaction();
+        System.out.println(t.getId().getId() + "****");
         t.start();
         if(t1 != -1)
             insertRow(hf, t, t1);
@@ -96,14 +97,11 @@ public class LogTest extends SimpleDbTestBase {
         throws DbException, TransactionAbortedException, IOException {
         Transaction t = new Transaction();
         t.start();
+        System.out.println(t.getId().getId() + ">>>>>");
         if(t1 != -1)
             insertRow(hf, t, t1);
-        if(-1 != -1)
-            insertRow(hf, t, -1);
         if(t1 != -1)
             look(hf, t, t1, true);
-        if(-1 != -1)
-            look(hf, t, -1, true);
         abort(t);
     }
 
@@ -141,7 +139,6 @@ public class LogTest extends SimpleDbTestBase {
         // *** Test:
         // check that BufferPool.flushPage() calls LogFile.logWrite().
         doInsert(hf1, 1, 2);
-
         if(Database.getLogFile().getTotalRecords() != 4)
             throw new RuntimeException("LogTest: wrong # of log records; patch failed?");
 
@@ -294,7 +291,6 @@ public class LogTest extends SimpleDbTestBase {
         doInsert(hf1, 5, -1);
         dontInsert(hf1, 6);
         doInsert(hf1, 7, -1);
-
         Transaction t = new Transaction();
         t.start();
         look(hf1, t, 1, true);
